@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/ekmas/cs16.css@main/css/cs16.min.css">
+
+<head>
+    <title>batu</title>
+    <link rel="stylesheet" href="sinop.css">
+    <meta name="viewport" content="width=device-width, initial-scale=0.6">
+    <meta name="description" content="Man, I feel like Gordon Freeman!">
+    <link rel="icon" href="img/halfbatu.png">
+    <link rel="preload" href="img/hello-ryo-yamada.webm" as="video" type="video/webm" fetchpriority="high">
+</head>
+
+<body>
+
+    <div id="intro-overlay">
+        <video id="intro-video" autoplay muted playsinline aria-label="roy">
+            <source src="img/hello-ryo-yamada.webm" type="video/webm">
+        </video>
+    </div>
+
+    <div class="options">
+        <div class="title">
+            <div class="icon"><img src="img/batuv2.png" class="logo"></div>
+            <p class="text" id="titlenick">bbbbbbbbbbbb</p>
+            <div class="kapamatusu">
+                <button class="cs-btn close"></button>
+            </div>
+        </div>
+        <div class="cs-tabs">
+            <input class="radiotab" name="tabs" tabindex="1" type="radio" id="tabone" checked="checked" />
+            <label class="label" for="tabone">About Me</label>
+            <div class="panel" tabindex="1">
+                <h2>Batu</h2>
+                <hr class="cs-hr" /><br>
+                <p>I am a Pull Stack Developer with 8 years of experience.<br> I just pull things off the internet and
+                    put it into my code.</p>
+                <br>
+                <section>
+                    <button type="button" class="cs-btn" onclick="document.querySelector('.cs-dialog').showModal();">
+                        Contact Me
+                    </button>
+                    <dialog class="cs-dialog">
+                        <form method="dialog">
+                            <div class="heading">
+                                <div class="wrapper">
+                                    <div class="icon"></div>
+                                    <p class="text">Contact Me</p>
+                                </div>
+                                <button class="cs-btn close"></button>
+                            </div>
+                            <div class="content">
+                                Soon...
+                            </div>
+                            <menu class="footer-btns">
+                                <button class="cs-btn">OK</button>
+                                <button class="cs-btn">Cancel</button>
+                                <button class="cs-btn">Apply</button>
+                            </menu>
+                        </form>
+                    </dialog>
+                </section>
+
+            </div>
+            <input class="radiotab" tabindex="1" name="tabs" type="radio" id="tabtwo" />
+            <label class="label" for="tabtwo">Socials</label>
+            <div class="panel" tabindex="1">
+                <h2>My Social Media Links</h2>
+                <hr class="cs-hr" /><br>
+                <p>Soon...</p>
+                <a href="https://github.com/batuhd" target="_blank">
+                    <button class="cs-btn">Github</button>
+                </a>
+            </div>
+            <input class="radiotab" tabindex="1" name="tabs" type="radio" id="tabthree" />
+            <label class="label" for="tabthree">Services</label>
+            <div class="panel" tabindex="1">
+
+                <h2>Credits</h2>
+
+                <hr class="cs-hr" />
+                <br>
+
+                <div id="sayacDiv">
+                    <a href="https://github.com/ekmas/cs16.css" target="_blank">
+                        <button class="cs-btn">used css: ekmas/cs16.css</button>
+                    </a>
+
+
+                    <br><br>
+
+                    made in <div class="cs-tooltip"><a href="https://sinop.goturkiye.com/"
+                            class="visitsinop">sinop</a><span
+                            style="bottom: 100%; width: 120px; left: 50%; margin-left: -50px"
+                            class="text">sinop.goturkiye.com</span></div> with <div class="cs-tooltip">👓<span
+                            style="bottom: 100%; width: 100px; left: 50%; margin-left: -50px" class="text">1.5 / 1.0</span>
+                    </div> and <div class="cs-tooltip">💝<span
+                            style="bottom: 100%; width: 100px; left: 50%; margin-left: -50px" class="text">love</span>
+                    </div> by batu<br>
+                </div>
+
+
+            </div>
+        </div>
+
+        <div class="bottom">
+            <div class="bottomtus">
+                <button class="cs-btn" id="bottomtusic">OK</button>
+                <button class="cs-btn" id="bottomtusic">Cancel</button>
+                <button class="cs-btn" id="bottomtusic">Apply</button>
+            </div>
+        </div>
+    </div>
+    <script src="halflife.js"></script>
+</body>
+
+</html>
