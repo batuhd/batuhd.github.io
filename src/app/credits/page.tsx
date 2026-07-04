@@ -39,7 +39,7 @@ export default function CreditsPage() {
         {/* Source Code */}
         <FadeIn delay={0.05}>
           <a
-            href="https://github.com/batuhd/batuhd.github.io"
+            href="https://github.com/batuhd/batuhdede.me"
             target="_blank"
             rel="noopener noreferrer"
             className="group flex items-center gap-4 p-4 rounded-2xl bg-card border hover:border-primary/50 transition-all"
@@ -50,7 +50,7 @@ export default function CreditsPage() {
             <div className="flex-1 min-w-0">
               <p className="font-medium">{t("credits.sourceCode")}</p>
               <p className="text-sm text-muted-foreground truncate">
-                github.com/batuhd/batuhd.github.io
+                github.com/batuhd/batuhdede.me
               </p>
             </div>
             <ExternalLink className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />

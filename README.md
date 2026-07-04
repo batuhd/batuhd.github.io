@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react" alt="React" />
   <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Tailwind_CSS_v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind" />
-  <img src="https://img.shields.io/badge/Framer_Motion-white?style=for-the-badge&logo=framer" alt="Framer Motion" />
+  <img src="https://img.shields.io/badge/Motion-white?style=for-the-badge&logo=framer" alt="Motion" />
   <img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
   <img src="https://img.shields.io/badge/Cloudflare_Turnstile-F38020?style=for-the-badge&logo=cloudflare&logoColor=white" alt="Cloudflare Turnstile" />
   <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel" />
@@ -17,7 +17,7 @@ A full-stack, ultra-modern, multilingual portfolio website featuring a built-in 
 
 **Every piece of content is admin-editable. No code changes needed to update your portfolio.**
 
-[🌐 Live Website](https://batuhdede.me) · [🐛 Report Bug](https://github.com/batuhd/batuhd.github.io/issues)
+[🌐 Live Website](https://batuhdede.me) · [🐛 Report Bug](https://github.com/batuhd/batuhdede.me/issues)
 
 </div>
 
@@ -64,12 +64,13 @@ The CMS features a powerful **relational linking engine** that lets you connect 
 
 ### 🏆 Interactive Certification Modals
 
-Certifications on the homepage are fully interactive:
+Certifications are fully interactive across the site:
 
-- Click any certification card to open a **spring-animated detail modal**
+- Click any certification card on the homepage to open a **spring-animated detail modal**
 - The modal displays the certification name, issuer, date, credential link, and icon
 - **Related skills** (via junction table) are rendered as tags
 - **Linked projects and blog posts** appear as clickable navigation cards inside the modal
+- Related certification links from blog/work modals route to a dedicated **`/certifications?cert=<id>`** page that opens the detail modal automatically
 
 ### 🖼️ Blog Featured Images
 
@@ -107,7 +108,7 @@ A hidden keyboard-surprise feature for visitors who discover the secret code:
   <img src="./public/media/503.jpg" width="45%" style="border-radius: 12px;" alt="503 Maintenance" />
 </div>
 <br />
-- Smooth page transitions powered by Framer Motion
+- Smooth page transitions powered by Motion
 
 ### 🌓 Dark & Light Theme
 
@@ -191,16 +192,16 @@ Additional security measures beyond the enterprise-grade foundation:
 | ------------------- | -------------------------------------------------------------------- | ------- |
 | **Framework**       | [Next.js](https://nextjs.org/) (App Router)                          | 16.2.9  |
 | **UI Library**      | [React](https://react.dev/)                                          | 19.2.7  |
-| **Language**        | [TypeScript](https://www.typescriptlang.org/)                        | 5.9.3   |
-| **Styling**         | [Tailwind CSS](https://tailwindcss.com/) + `tailwind-merge` + `clsx` | 4.3.1 / 3.6.0 / 2.1.1 |
-| **Animations**      | [Motion](https://motion.dev/) (formerly Framer Motion)               | 12.42.0 |
-| **Database & Auth** | [Supabase](https://supabase.com/) (`supabase-js` + `@supabase/ssr`)  | 2.108.2 / 0.12.0 |
+| **Language**        | [TypeScript](https://www.typescriptlang.org/)                        | 5.x     |
+| **Styling**         | [Tailwind CSS](https://tailwindcss.com/) + `tailwind-merge` + `clsx` | 4.x / 3.x / 2.x |
+| **Animations**      | [Motion](https://motion.dev/) (formerly Framer Motion)               | 12.x    |
+| **Database & Auth** | [Supabase](https://supabase.com/) (`@supabase/supabase-js` + `@supabase/ssr`) | 2.x / 0.12 |
 | **Security**        | Cloudflare Turnstile, Next.js Middleware, CSP                        | Latest  |
-| **Validation**      | [Zod](https://zod.dev/)                                              | 3.25.76 |
-| **Notifications**   | [Sonner](https://sonner.emilkowal.ski/)                              | 2.0.7   |
+| **Validation**      | [Zod](https://zod.dev/)                                              | 3.x     |
+| **Notifications**   | [Sonner](https://sonner.emilkowal.ski/)                              | 2.x     |
 | **Icons**           | [Lucide React](https://lucide.dev/)                                  | 0.575.0 |
-| **Markdown**        | [react-markdown](https://github.com/remarkjs/react-markdown) + [rehype-sanitize](https://github.com/rehypejs/rehype-sanitize) | 10.1.0 / 6.0.0 |
-| **Analytics**       | [Vercel Analytics](https://vercel.com/analytics) & Speed Insights    | 2.0.1 / 2.0.0 |
+| **Markdown**        | [react-markdown](https://github.com/remarkjs/react-markdown) + [rehype-sanitize](https://github.com/rehypejs/rehype-sanitize) | 10.x / 6.x |
+| **Analytics**       | [Vercel Analytics](https://vercel.com/analytics) & Speed Insights    | 2.x / 2.x |
 | **Hosting**         | [Vercel](https://vercel.com/)                                        | -       |
 
 ---
@@ -220,6 +221,7 @@ Additional security measures beyond the enterprise-grade foundation:
     │   │   └── page.tsx         # 📋 Admin dashboard (full CMS)
     │   ├── blog/                # 📝 Blog feed with animated modals + featured images
     │   ├── works/               # 💼 Portfolio feed with animated modals + gallery
+    │   ├── certifications/      # 🏆 Dedicated certification detail page
     │   ├── credits/             # 🏆 Tech credits & security details
     │   ├── api/github/          # 🔌 GitHub GraphQL API route handler
     │   └── feed.xml/            # 📡 RSS feed generator
@@ -266,7 +268,7 @@ Additional security measures beyond the enterprise-grade foundation:
 
 ## 🗄️ Database Schema
 
-The Supabase database consists of **16 tables**, all with Row Level Security enabled:
+The Supabase database consists of **17 tables**, all with Row Level Security enabled:
 
 | Table                  | Purpose                         | Key Fields                                                            |
 | ---------------------- | ------------------------------- | --------------------------------------------------------------------- |
@@ -281,6 +283,7 @@ The Supabase database consists of **16 tables**, all with Row Level Security ena
 | `projects`             | Portfolio works                 | title, description, links, tags, image, linked\_\* IDs + translations |
 | `project_images`       | Multi-image gallery per project | project_id, image_url, order_index                                    |
 | `blogs`                | Blog posts (Markdown)           | title, excerpt, content, date, image_url, is_published, linked\_\* IDs |
+| `blog_images`          | Multi-image gallery per blog    | blog_id, image_url, order_index                                       |
 | `social_links`         | Dock navigation links           | platform, URL, icon, account_type                                     |
 | `contact_emails`       | Contact email addresses         | label, email, label_tr/de/es, order_index                             |
 | `section_order`        | Homepage section ordering       | section_id, order_index                                               |
@@ -420,8 +423,8 @@ flowchart TD
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/batuhd/batuhd.github.io.git
-cd batuhd.github.io
+git clone https://github.com/batuhd/batuhdede.me.git
+cd batuhdede.me
 npm install
 ```
 
@@ -504,8 +507,8 @@ If you have existing CSV backups, import them in this order to satisfy foreign-k
 6. `skill_categories`
 7. `projects`
 8. `blogs`
-9. `project_images`
-10. `blog_images`
+9. `blog_images`
+10. `project_images`
 11. `certification_skills`
 12. `social_links`
 13. `contact_emails`
@@ -537,9 +540,10 @@ npm run dev
 | `http://localhost:3000`          | Your portfolio website |
 | `http://localhost:3000/admin`    | CMS admin dashboard    |
 | `http://localhost:3000/blog`     | Blog feed              |
-| `http://localhost:3000/works`    | Portfolio works feed   |
-| `http://localhost:3000/credits`  | Tech credits page      |
-| `http://localhost:3000/feed.xml` | RSS feed               |
+| `http://localhost:3000/works`           | Portfolio works feed          |
+| `http://localhost:3000/certifications`  | Certification detail page     |
+| `http://localhost:3000/credits`         | Tech credits page             |
+| `http://localhost:3000/feed.xml`        | RSS feed                      |
 
 ### 5. Deploy to Vercel
 
