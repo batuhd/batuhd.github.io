@@ -65,6 +65,7 @@ desktop.ini
 #Agents & MCPs
 .opencode/
 .playwright-mcp/
+dev.log
 
 #kişisel
 /csv

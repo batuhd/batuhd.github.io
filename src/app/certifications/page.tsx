@@ -7,7 +7,7 @@ import { Certifications } from "@/components/home/profile-sections";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Certifications - Batuhan Dede",
+  title: "Certifications",
   description: "My certifications and credentials",
 };
 

@@ -766,6 +766,7 @@ export function Activities() {
                             href={act.link_url}
                             target="_blank"
                             rel="noopener noreferrer"
+                            aria-label={getLocalized(act, "organization")}
                             className="text-muted-foreground hover:text-primary transition-colors flex-shrink-0 mt-1"
                           >
                             <ExternalLink className="h-3.5 w-3.5" />
@@ -832,6 +833,7 @@ export function Activities() {
                             href={act.link_url}
                             target="_blank"
                             rel="noopener noreferrer"
+                            aria-label={getLocalized(act, "organization")}
                             className="text-muted-foreground hover:text-primary transition-colors flex-shrink-0 mt-1"
                           >
                             <ExternalLink className="h-3.5 w-3.5" />

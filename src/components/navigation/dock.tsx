@@ -249,7 +249,12 @@ export function Dock() {
           {/* Pages */}
           <div className="flex items-center gap-0.5 sm:gap-2">
             {pageItems.map((item) => (
-              <Link key={item.labelKey} href={item.href} onClick={closeMenus}>
+              <Link
+                key={item.labelKey}
+                href={item.href}
+                onClick={closeMenus}
+                aria-label={t(item.labelKey)}
+              >
                 <DockIcon
                   icon={item.icon}
                   label={t(item.labelKey)}
@@ -265,6 +270,7 @@ export function Dock() {
                 setContactModalOpen(true);
                 setMoreMenuOpen(false);
               }}
+              aria-label={t("nav.contact")}
             >
               <DockIcon
                 icon={Mail}
@@ -280,7 +286,11 @@ export function Dock() {
 
           {/* Credits - desktop only */}
           <div className="hidden sm:flex items-center gap-2">
-            <Link href="/credits" onClick={closeMenus}>
+            <Link
+              href="/credits"
+              onClick={closeMenus}
+              aria-label={t("nav.credits")}
+            >
               <DockIcon
                 icon={Star}
                 label={t("nav.credits")}
@@ -292,7 +302,7 @@ export function Dock() {
           </div>
 
           {/* Theme */}
-          <button onClick={toggleTheme}>
+          <button onClick={toggleTheme} aria-label={t("nav.theme")}>
             <DockIcon
               icon={mounted ? (theme === "dark" ? Sun : Moon) : Sun}
               label={t("nav.theme")}
@@ -308,6 +318,7 @@ export function Dock() {
               setLangModalOpen(true);
               setMoreMenuOpen(false);
             }}
+            aria-label={t("nav.language")}
           >
             <DockIcon
               icon={Globe}
@@ -325,6 +336,7 @@ export function Dock() {
                 setMoreMenuOpen((prev) => !prev);
                 setLangModalOpen(false);
               }}
+              aria-label="Menu"
             >
               <DockIcon
                 icon={moreMenuOpen ? X : MoreHorizontal}

@@ -19,7 +19,6 @@ import "./globals.css";
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
 };
 
 export const metadata: Metadata = {
@@ -47,7 +46,13 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
-    noarchive: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-snippet": -1,
+      "max-image-preview": "large",
+      "max-video-preview": -1,
+    },
   },
   alternates: {
     types: {
@@ -87,6 +92,7 @@ export default function RootLayout({
                 <MaintenanceGuard>
                   <Link
                     href="/"
+                    aria-label="Ana sayfaya dön"
                     className="fixed top-4 right-4 sm:top-6 sm:right-6 z-50 transition-transform hover:scale-105 duration-300"
                   >
                     <Image

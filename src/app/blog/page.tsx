@@ -6,7 +6,7 @@ import { BlogContent } from "./blog-content";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Blog - Batuhan Dede",
+  title: "Blog",
   description: "Thoughts, tutorials, and insights on software development",
 };
 
