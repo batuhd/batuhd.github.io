@@ -38,6 +38,9 @@ export function Info() {
               <img
                 src={sanitizeUrl(aboutMe.profile_photo_url) || ""}
                 alt={`${name} - Profile Photo`}
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
                 className="rounded-2xl object-cover w-20 h-20 sm:w-24 sm:h-24 ring-2 ring-transparent group-hover:ring-primary/20 transition-all shadow-md"
               />
             ) : (
