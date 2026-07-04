@@ -254,6 +254,7 @@ export function Dock() {
                 href={item.href}
                 onClick={closeMenus}
                 aria-label={t(item.labelKey)}
+                aria-current={isPageActive(item.href) ? "page" : undefined}
               >
                 <DockIcon
                   icon={item.icon}
@@ -290,6 +291,7 @@ export function Dock() {
               href="/credits"
               onClick={closeMenus}
               aria-label={t("nav.credits")}
+              aria-current={isPageActive("/credits") ? "page" : undefined}
             >
               <DockIcon
                 icon={Star}
@@ -359,6 +361,7 @@ export function Dock() {
                   <Link
                     href="/credits"
                     onClick={() => setMoreMenuOpen(false)}
+                    aria-current={isPageActive("/credits") ? "page" : undefined}
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
                       isPageActive("/credits")
