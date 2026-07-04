@@ -48,13 +48,37 @@ export function BlogContent({ initialBlogs, entityMap }: BlogContentProps) {
   const searchParams = useSearchParams();
   const postIdFromUrl = searchParams.get("post");
 
-  // URL'den post açma
+  // URL'den post açma/kapatma
   useEffect(() => {
-    if (postIdFromUrl && posts.length > 0 && !selectedPost) {
-      const target = posts.find((p) => p.id === postIdFromUrl);
-      if (target) setSelectedPost(target);
+    if (!postIdFromUrl) {
+      setSelectedPost(null);
+      return;
     }
-  }, [postIdFromUrl, posts, selectedPost]);
+    if (posts.length === 0) return;
+    const target = posts.find((p) => p.id === postIdFromUrl);
+    if (target) setSelectedPost(target);
+  }, [postIdFromUrl, posts]);
+
+  const openPost = (post: BlogWithImages) => {
+    setSelectedPost(post);
+    window.history.pushState(null, "", `/blog?post=${post.id}`);
+  };
+
+  const closePost = () => {
+    setSelectedPost(null);
+    window.history.replaceState(null, "", "/blog");
+  };
+
+  // ESC ile kapatma
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedPost) {
+        closePost();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedPost]);
 
   // Body scroll lock
   useEffect(() => {
@@ -139,7 +163,7 @@ export function BlogContent({ initialBlogs, entityMap }: BlogContentProps) {
             {posts.map((post, index) => (
               <FadeIn key={post.id} delay={0.1 + index * 0.05}>
                 <article
-                  onClick={() => setSelectedPost(post)}
+                  onClick={() => openPost(post)}
                   className="group flex flex-col justify-between rounded-2xl border bg-card p-5 sm:p-6 shadow-sm transition-all hover:shadow-md cursor-pointer hover:border-primary/50 active:scale-[0.99]"
                 >
                   <div className="space-y-3">
@@ -231,6 +255,8 @@ export function BlogContent({ initialBlogs, entityMap }: BlogContentProps) {
                               e.stopPropagation();
                               if (entity.type === "project") {
                                 window.location.href = `/works?project=${entity.id}`;
+                              } else if (entity.type === "certification") {
+                                window.location.href = `/certifications?cert=${entity.id}`;
                               } else {
                                 window.location.href = section || "#";
                               }
@@ -268,7 +294,7 @@ export function BlogContent({ initialBlogs, entityMap }: BlogContentProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-background/80 px-0 sm:px-6 backdrop-blur-sm"
-            onClick={() => setSelectedPost(null)}
+            onClick={() => closePost()}
           >
             <motion.div
               initial={{ opacity: 0, y: 40 }}
@@ -299,7 +325,7 @@ export function BlogContent({ initialBlogs, entityMap }: BlogContentProps) {
                     excerpt={getLocalized(selectedPost, "excerpt", "")}
                   />
                   <button
-                    onClick={() => setSelectedPost(null)}
+                    onClick={() => closePost()}
                     className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                   >
                     <X className="h-5 w-5" />
@@ -405,6 +431,8 @@ export function BlogContent({ initialBlogs, entityMap }: BlogContentProps) {
                               onClick={() => {
                                 if (entity.type === "project") {
                                   window.location.href = `/works?project=${entity.id}`;
+                                } else if (entity.type === "certification") {
+                                  window.location.href = `/?cert=${entity.id}#certifications`;
                                 } else {
                                   window.location.href = section || "#";
                                 }

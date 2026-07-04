@@ -939,11 +939,39 @@ export function Certifications() {
   const [selectedCert, setSelectedCert] = useState<any | null>(null);
   const [showAllCerts, setShowAllCerts] = useState(false);
   const [isClient, setIsClient] = useState(false);
-
   // Mark as client-side only after mount to avoid hydration mismatch
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // URL'den sertifika açma (örn: /certifications?cert=uuid)
+  useEffect(() => {
+    const cert = new URLSearchParams(window.location.search).get("cert");
+    if (!cert || certifications.length === 0) return;
+    const target = certifications.find((c: any) => c.id === cert);
+    if (target) setSelectedCert(target);
+  }, [certifications]);
+
+  const openCert = (cert: any) => {
+    setSelectedCert(cert);
+    window.history.pushState(null, "", `/certifications?cert=${cert.id}`);
+  };
+
+  const closeCert = () => {
+    setSelectedCert(null);
+    window.history.replaceState(null, "", "/");
+  };
+
+  // ESC ile kapatma
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedCert) {
+        closeCert();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedCert]);
 
   if (certifications.length === 0) return null;
 
@@ -965,7 +993,7 @@ export function Certifications() {
   const CertItem = ({ cert }: { cert: any }) => {
     return (
       <div
-        onClick={() => setSelectedCert(cert)}
+        onClick={() => openCert(cert)}
         className="group flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-xl border bg-card/80 transition-all hover:bg-accent/50 cursor-pointer flex-shrink-0 h-12 min-w-0"
       >
         {cert.icon_url && (
@@ -1037,7 +1065,7 @@ export function Certifications() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-background/80 px-0 sm:px-6 backdrop-blur-sm"
-            onClick={() => setSelectedCert(null)}
+            onClick={() => closeCert()}
           >
             <motion.div
               initial={{ opacity: 0, y: 40 }}
@@ -1052,7 +1080,7 @@ export function Certifications() {
                   {t("cert.details")}
                 </h2>
                 <button
-                  onClick={() => setSelectedCert(null)}
+                  onClick={() => closeCert()}
                   className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                 >
                   <X className="h-5 w-5" />
@@ -1231,7 +1259,7 @@ export function Certifications() {
                       key={cert.id}
                       onClick={() => {
                         setShowAllCerts(false);
-                        setTimeout(() => setSelectedCert(cert), 300);
+                        setTimeout(() => openCert(cert), 300);
                       }}
                       className="group flex items-start gap-2 sm:gap-3 p-2.5 sm:p-4 rounded-xl border bg-card/50 transition-all hover:bg-accent/50 cursor-pointer min-w-0 w-full overflow-hidden"
                     >

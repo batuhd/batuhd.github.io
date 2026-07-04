@@ -57,12 +57,37 @@ export function WorksContent({
   const searchParams = useSearchParams();
   const projectIdFromUrl = searchParams.get("project");
 
+  // URL'den proje açma/kapatma
   useEffect(() => {
-    if (projectIdFromUrl && projects.length > 0 && !selectedProject) {
-      const target = projects.find((p) => p.id === projectIdFromUrl);
-      if (target) setSelectedProject(target);
+    if (!projectIdFromUrl) {
+      setSelectedProject(null);
+      return;
     }
-  }, [projectIdFromUrl, projects, selectedProject]);
+    if (projects.length === 0) return;
+    const target = projects.find((p) => p.id === projectIdFromUrl);
+    if (target) setSelectedProject(target);
+  }, [projectIdFromUrl, projects]);
+
+  const openProject = (project: ProjectWithImages) => {
+    setSelectedProject(project);
+    window.history.pushState(null, "", `/works?project=${project.id}`);
+  };
+
+  const closeProject = () => {
+    setSelectedProject(null);
+    window.history.replaceState(null, "", "/works");
+  };
+
+  // ESC ile kapatma
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedProject) {
+        closeProject();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedProject]);
 
   useEffect(() => {
     document.body.style.overflow = selectedProject ? "hidden" : "auto";
@@ -134,7 +159,7 @@ export function WorksContent({
             {projects.map((project, index) => (
               <FadeIn key={project.id} delay={0.1 + index * 0.05}>
                 <div
-                  onClick={() => setSelectedProject(project)}
+                  onClick={() => openProject(project)}
                   className="group relative flex h-full flex-col justify-between overflow-hidden rounded-2xl border bg-card p-5 sm:p-6 shadow-sm transition-all hover:shadow-md cursor-pointer hover:border-primary/50 active:scale-[0.99]"
                 >
                   <div className="space-y-4">
@@ -203,7 +228,7 @@ export function WorksContent({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-background/80 px-0 sm:px-6 backdrop-blur-sm"
-            onClick={() => setSelectedProject(null)}
+            onClick={() => closeProject()}
           >
             <motion.div
               initial={{ opacity: 0, y: 40 }}
@@ -219,7 +244,7 @@ export function WorksContent({
                   {getLocalized(selectedProject, "title", "Project")}
                 </h2>
                 <button
-                  onClick={() => setSelectedProject(null)}
+                  onClick={() => closeProject()}
                   className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors flex-shrink-0"
                 >
                   <X className="h-5 w-5" />
@@ -358,7 +383,11 @@ export function WorksContent({
                         return (
                           <Link
                             key={id}
-                            href={section}
+                            href={
+                              entity.type === "certification"
+                                ? `/certifications?cert=${entity.id}`
+                                : section
+                            }
                             onClick={() => setSelectedProject(null)}
                             className="inline-flex items-center gap-1.5 rounded-md bg-secondary/50 px-3 py-1.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/70 transition-colors"
                           >

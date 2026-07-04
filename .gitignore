@@ -62,11 +62,12 @@ desktop.ini
 # todo list
 /todo
 
-#agents
-AGENTS.md
+#Agents & MCPs
 .opencode/
+.playwright-mcp/
 
-
-# fix
+#kişisel
 /csv
 Ekran görüntüsü 2026-06-27 19*
+database.db*
+NUL
