@@ -13,17 +13,28 @@ export async function generateMetadata({
   searchParams: Promise<{ project?: string }>;
 }): Promise<Metadata> {
   const { project } = await searchParams;
+  const { projects } = await fetchWorksData();
+  const selectedProject = project
+    ? projects.find((p) => p.id === project)
+    : null;
+
+  const title = selectedProject
+    ? getLocalized(selectedProject, "title", "en")
+    : "Works";
+  const description = selectedProject
+    ? getLocalized(selectedProject, "description", "en")
+    : "A collection of my projects and works";
   const ogImage = project
     ? `/api/og/works?project=${encodeURIComponent(project)}`
     : "/opengraph-image";
 
   return {
-    title: "Works",
-    description: "A collection of my projects and works",
+    title,
+    description,
     openGraph: {
-      title: "Works",
-      description: "A collection of my projects and works",
-      url: "/works",
+      title,
+      description,
+      url: selectedProject ? `/works?project=${selectedProject.id}` : "/works",
       siteName: siteConfig.name,
       locale: "tr_TR",
       type: "website",
@@ -32,14 +43,14 @@ export async function generateMetadata({
           url: ogImage,
           width: 1200,
           height: 630,
-          alt: "Works — Batuhan Dede",
+          alt: selectedProject ? title : "Works — Batuhan Dede",
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: "Works",
-      description: "A collection of my projects and works",
+      title,
+      description,
       images: [ogImage],
     },
   };

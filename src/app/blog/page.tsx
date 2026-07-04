@@ -13,17 +13,24 @@ export async function generateMetadata({
   searchParams: Promise<{ post?: string }>;
 }): Promise<Metadata> {
   const { post } = await searchParams;
+  const { blogs } = await fetchBlogData();
+  const blog = post ? blogs.find((b) => b.id === post) : null;
+
+  const title = blog ? getLocalized(blog, "title", "en") : "Blog";
+  const description = blog
+    ? getLocalized(blog, "excerpt", "en")
+    : "Thoughts, tutorials, and insights on software development";
   const ogImage = post
     ? `/api/og/blog?post=${encodeURIComponent(post)}`
     : "/opengraph-image";
 
   return {
-    title: "Blog",
-    description: "Thoughts, tutorials, and insights on software development",
+    title,
+    description,
     openGraph: {
-      title: "Blog",
-      description: "Thoughts, tutorials, and insights on software development",
-      url: "/blog",
+      title,
+      description,
+      url: blog ? `/blog?post=${blog.id}` : "/blog",
       siteName: siteConfig.name,
       locale: "tr_TR",
       type: "website",
@@ -32,14 +39,14 @@ export async function generateMetadata({
           url: ogImage,
           width: 1200,
           height: 630,
-          alt: "Blog — Batuhan Dede",
+          alt: blog ? title : "Blog — Batuhan Dede",
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: "Blog",
-      description: "Thoughts, tutorials, and insights on software development",
+      title,
+      description,
       images: [ogImage],
     },
   };

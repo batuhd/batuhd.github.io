@@ -14,17 +14,30 @@ export async function generateMetadata({
   searchParams: Promise<{ cert?: string }>;
 }): Promise<Metadata> {
   const { cert } = await searchParams;
+  const data = await fetchHomeData();
+  const selectedCert = cert
+    ? data.certifications.find((c) => c.id === cert)
+    : null;
+
+  const title = selectedCert
+    ? getLocalized(selectedCert, "name", "en")
+    : "Certifications";
+  const description = selectedCert
+    ? `Certification issued by ${getLocalized(selectedCert, "issuer", "en")}`
+    : "My certifications and credentials";
   const ogImage = cert
     ? `/api/og/certifications?cert=${encodeURIComponent(cert)}`
     : "/opengraph-image";
 
   return {
-    title: "Certifications",
-    description: "My certifications and credentials",
+    title,
+    description,
     openGraph: {
-      title: "Certifications",
-      description: "My certifications and credentials",
-      url: "/certifications",
+      title,
+      description,
+      url: selectedCert
+        ? `/certifications?cert=${selectedCert.id}`
+        : "/certifications",
       siteName: siteConfig.name,
       locale: "tr_TR",
       type: "website",
@@ -33,14 +46,14 @@ export async function generateMetadata({
           url: ogImage,
           width: 1200,
           height: 630,
-          alt: "Certifications — Batuhan Dede",
+          alt: selectedCert ? title : "Certifications — Batuhan Dede",
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: "Certifications",
-      description: "My certifications and credentials",
+      title,
+      description,
       images: [ogImage],
     },
   };
