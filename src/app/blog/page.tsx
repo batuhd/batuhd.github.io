@@ -3,7 +3,7 @@ import { fetchBlogData, getLocalized } from "@/lib/data";
 import { Metadata } from "next";
 import { BlogContent } from "./blog-content";
 import { siteConfig } from "@/config/site";
-import { JsonLd, articleJsonLd } from "@/components/json-ld";
+import { JsonLd, articleJsonLd, breadcrumbJsonLd } from "@/components/json-ld";
 
 export const revalidate = 60;
 
@@ -76,8 +76,22 @@ export default async function BlogPage({
       })
     : null;
 
+  const breadcrumbSchema = breadcrumbJsonLd([
+    { name: "Ana Sayfa", url: siteConfig.url },
+    { name: "Blog", url: `${siteConfig.url}/blog` },
+    ...(selectedBlog
+      ? [
+          {
+            name: getLocalized(selectedBlog, "title", "en"),
+            url: `${siteConfig.url}/blog?post=${selectedBlog.id}`,
+          },
+        ]
+      : []),
+  ]);
+
   return (
     <>
+      <JsonLd data={breadcrumbSchema} />
       {articleSchema && <JsonLd data={articleSchema} />}
       <Suspense fallback={<div className="min-h-screen" />}>
         <BlogContent initialBlogs={blogs} entityMap={entityMap} />

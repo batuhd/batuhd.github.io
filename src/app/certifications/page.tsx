@@ -4,7 +4,7 @@ import { LanguageProvider } from "@/context/language-context";
 import { SiteDataProvider } from "@/context/site-data-context";
 import { Certifications } from "@/components/home/profile-sections";
 import { siteConfig } from "@/config/site";
-import { JsonLd, educationalCredentialJsonLd } from "@/components/json-ld";
+import { JsonLd, educationalCredentialJsonLd, breadcrumbJsonLd } from "@/components/json-ld";
 
 export const revalidate = 60;
 
@@ -88,6 +88,19 @@ export default async function CertificationsPage({
       })
     : null;
 
+  const breadcrumbSchema = breadcrumbJsonLd([
+    { name: "Ana Sayfa", url: siteConfig.url },
+    { name: "Sertifikalar", url: `${siteConfig.url}/certifications` },
+    ...(selectedCert
+      ? [
+          {
+            name: getLocalized(selectedCert, "name", "en"),
+            url: `${siteConfig.url}/certifications?cert=${selectedCert.id}`,
+          },
+        ]
+      : []),
+  ]);
+
   const siteData = {
     aboutMe: data.aboutMe,
     skillCategories: data.skillCategories,
@@ -109,6 +122,7 @@ export default async function CertificationsPage({
   return (
     <LanguageProvider>
       <SiteDataProvider initialData={siteData}>
+        <JsonLd data={breadcrumbSchema} />
         {credentialSchema && <JsonLd data={credentialSchema} />}
         <div className="max-w-2xl mx-auto w-full pb-24">
           <Certifications />

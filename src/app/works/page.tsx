@@ -3,7 +3,7 @@ import { fetchWorksData, getLocalized } from "@/lib/data";
 import { Metadata } from "next";
 import { WorksContent } from "./works-content";
 import { siteConfig } from "@/config/site";
-import { JsonLd, softwareApplicationJsonLd } from "@/components/json-ld";
+import { JsonLd, softwareApplicationJsonLd, breadcrumbJsonLd } from "@/components/json-ld";
 
 export const revalidate = 60;
 
@@ -83,8 +83,22 @@ export default async function WorksPage({
       })
     : null;
 
+  const breadcrumbSchema = breadcrumbJsonLd([
+    { name: "Ana Sayfa", url: siteConfig.url },
+    { name: "Works", url: `${siteConfig.url}/works` },
+    ...(selectedProject
+      ? [
+          {
+            name: getLocalized(selectedProject, "title", "en"),
+            url: `${siteConfig.url}/works?project=${selectedProject.id}`,
+          },
+        ]
+      : []),
+  ]);
+
   return (
     <>
+      <JsonLd data={breadcrumbSchema} />
       {softwareSchema && <JsonLd data={softwareSchema} />}
       <Suspense fallback={<div className="min-h-screen" />}>
         <WorksContent

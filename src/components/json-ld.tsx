@@ -141,3 +141,43 @@ export function educationalCredentialJsonLd({
     credentialId,
   };
 }
+
+export function websiteJsonLd({
+  name,
+  url,
+  searchUrl,
+}: {
+  name: string;
+  url: string;
+  searchUrl: string;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name,
+    url,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: searchUrl,
+      },
+      "query-input": "required name=search_term_string",
+    },
+  };
+}
+
+export function breadcrumbJsonLd(
+  items: { name: string; url: string }[],
+) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      item: item.url,
+    })),
+  };
+}

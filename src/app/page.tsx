@@ -5,7 +5,7 @@ import { sanitizeUrl } from "@/lib/utils";
 import { LanguageProvider } from "@/context/language-context";
 import { SiteDataProvider } from "@/context/site-data-context";
 import { Info } from "@/components/home/info";
-import { JsonLd, personJsonLd } from "@/components/json-ld";
+import { JsonLd, personJsonLd, websiteJsonLd } from "@/components/json-ld";
 import { About } from "@/components/home/about";
 import { Skills } from "@/components/home/skills";
 import {
@@ -112,10 +112,16 @@ export default async function Home() {
       getLocalized(data.aboutMe, "bio", defaultLang) || userConfig.about,
   });
 
+  const websiteSchema = websiteJsonLd({
+    name: siteConfig.name,
+    url: siteConfig.url,
+    searchUrl: `${siteConfig.url}/blog?post={search_term_string}`,
+  });
+
   return (
     <LanguageProvider>
       <SiteDataProvider initialData={siteData}>
-        <JsonLd data={personSchema} />
+        <JsonLd data={[websiteSchema, personSchema]} />
         <div className="space-y-10 sm:space-y-16 max-w-2xl mx-auto w-full">
           <FadeIn delay={0.1}>
             <Info />
