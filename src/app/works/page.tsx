@@ -28,9 +28,16 @@ export async function generateMetadata({
     ? `/api/og/works?project=${encodeURIComponent(project)}`
     : "/opengraph-image";
 
+  const canonical = selectedProject
+    ? `${siteConfig.url}/works?project=${selectedProject.id}`
+    : `${siteConfig.url}/works`;
+
   return {
     title,
     description,
+    alternates: {
+      canonical,
+    },
     openGraph: {
       title,
       description,

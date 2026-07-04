@@ -29,9 +29,16 @@ export async function generateMetadata({
     ? `/api/og/certifications?cert=${encodeURIComponent(cert)}`
     : "/opengraph-image";
 
+  const canonical = selectedCert
+    ? `${siteConfig.url}/certifications?cert=${selectedCert.id}`
+    : `${siteConfig.url}/certifications`;
+
   return {
     title,
     description,
+    alternates: {
+      canonical,
+    },
     openGraph: {
       title,
       description,
