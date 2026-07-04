@@ -20,6 +20,7 @@ import "./globals.css";
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: "#0a0a0a",
 };
 
 export const metadata: Metadata = {
@@ -67,11 +68,17 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
+    canonical: siteConfig.url,
     types: {
       "application/rss+xml": `${siteConfig.url}/feed.xml`,
     },
   },
   manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: siteConfig.name,
+    statusBarStyle: "black-translucent",
+  },
   other: {
     darkreader: "disable",
   },
@@ -84,7 +91,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="tr"
       suppressHydrationWarning
       className={`${GeistSans.variable} ${GeistMono.variable}`}
     >

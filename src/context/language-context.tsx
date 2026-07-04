@@ -12,12 +12,12 @@ import { translations, type Locale } from "@/config/translations";
 const SUPPORTED_LOCALES: Locale[] = ["tr", "en", "de", "es"];
 
 function detectBrowserLocale(): Locale {
-  if (typeof navigator === "undefined") return "en";
+  if (typeof navigator === "undefined") return "tr";
   const browserLang = navigator.language.toLowerCase();
   const exact = SUPPORTED_LOCALES.find((l) => browserLang === l);
   if (exact) return exact;
   const prefix = browserLang.split("-")[0];
-  return SUPPORTED_LOCALES.find((l) => l === prefix) || "en";
+  return SUPPORTED_LOCALES.find((l) => l === prefix) || "tr";
 }
 
 interface LanguageContextType {
@@ -25,6 +25,7 @@ interface LanguageContextType {
   setLocale: (locale: Locale) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
   getLocalized: (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     item: Record<string, any>,
     field: string,
     fallback?: string
@@ -36,11 +37,12 @@ const LanguageContext = createContext<LanguageContextType | undefined>(
 );
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("en");
+  const [locale, setLocaleState] = useState<Locale>("tr");
 
   useEffect(() => {
     const saved = localStorage.getItem("locale") as Locale | null;
     if (saved && translations[saved]) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocaleState(saved);
     } else {
       const detected = detectBrowserLocale();
@@ -69,6 +71,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
    * Example: getLocalized(project, "title") → project.title_tr || project.title
    */
   const getLocalized = (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     item: Record<string, any>,
     field: string,
     fallback = ""

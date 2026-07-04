@@ -25,7 +25,6 @@ export const revalidate = 60;
 
 // Metadata
 export const metadata = {
-  title: "Batuhan Dede - Portfolio",
   description: "Full Stack Developer & Software Engineer",
 };
 
@@ -157,7 +156,7 @@ export default async function Home() {
 
           <FadeIn delay={0.7} direction="none">
             <footer className="border-t pt-6 sm:pt-8 pb-16 sm:pb-8 text-center text-sm text-muted-foreground">
-              <p>Sinop'ta ❤️ ile yapıldı</p>
+              <p>Sinop&apos;ta ❤️ ile yapıldı</p>
               <p className="mt-1">&copy;batuhd</p>
             </footer>
           </FadeIn>
