@@ -1,9 +1,10 @@
-import { fetchHomeData } from "@/lib/data";
+import { fetchHomeData, getLocalized } from "@/lib/data";
 import { Metadata } from "next";
 import { LanguageProvider } from "@/context/language-context";
 import { SiteDataProvider } from "@/context/site-data-context";
 import { Certifications } from "@/components/home/profile-sections";
 import { siteConfig } from "@/config/site";
+import { JsonLd, educationalCredentialJsonLd } from "@/components/json-ld";
 
 export const revalidate = 60;
 
@@ -45,8 +46,34 @@ export async function generateMetadata({
   };
 }
 
-export default async function CertificationsPage() {
+export default async function CertificationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cert?: string }>;
+}) {
+  const { cert } = await searchParams;
   const data = await fetchHomeData();
+
+  const selectedCert = cert
+    ? data.certifications.find((c) => c.id === cert)
+    : null;
+  const credentialSchema = selectedCert
+    ? educationalCredentialJsonLd({
+        name: getLocalized(selectedCert, "name", "en"),
+        description: `Certification issued by ${getLocalized(selectedCert, "issuer", "en")}`,
+        url: selectedCert.link_url
+          ? selectedCert.link_url.startsWith("/")
+            ? `${siteConfig.url}${selectedCert.link_url}`
+            : selectedCert.link_url
+          : `${siteConfig.url}/certifications?cert=${selectedCert.id}`,
+        image: selectedCert.icon_url
+          ? selectedCert.icon_url.startsWith("/")
+            ? `${siteConfig.url}${selectedCert.icon_url}`
+            : selectedCert.icon_url
+          : undefined,
+        organization: getLocalized(selectedCert, "issuer", "en"),
+      })
+    : null;
 
   const siteData = {
     aboutMe: data.aboutMe,
@@ -69,6 +96,7 @@ export default async function CertificationsPage() {
   return (
     <LanguageProvider>
       <SiteDataProvider initialData={siteData}>
+        {credentialSchema && <JsonLd data={credentialSchema} />}
         <div className="max-w-2xl mx-auto w-full pb-24">
           <Certifications />
         </div>

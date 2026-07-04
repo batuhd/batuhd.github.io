@@ -1,8 +1,11 @@
 import { fetchHomeData, getLocalized } from "@/lib/data";
 import { userConfig } from "@/config/user";
+import { siteConfig } from "@/config/site";
+import { sanitizeUrl } from "@/lib/utils";
 import { LanguageProvider } from "@/context/language-context";
 import { SiteDataProvider } from "@/context/site-data-context";
 import { Info } from "@/components/home/info";
+import { JsonLd, personJsonLd } from "@/components/json-ld";
 import { About } from "@/components/home/about";
 import { Skills } from "@/components/home/skills";
 import {
@@ -83,9 +86,37 @@ export default async function Home() {
     data.aboutMe?.quote_author || userConfig.favoriteQuote.author;
   const showQuote = data.aboutMe?.show_quote !== false;
 
+  const profileImage = data.aboutMe?.profile_photo_url
+    ? data.aboutMe.profile_photo_url.startsWith("/")
+      ? `${siteConfig.url}${data.aboutMe.profile_photo_url}`
+      : data.aboutMe.profile_photo_url
+    : `${siteConfig.url}/media/yuvarlaklogobeyaz.png`;
+
+  const sameAs = Array.from(
+    new Set([
+      ...data.socialLinks
+        .map((link) => sanitizeUrl(link.url))
+        .filter((url): url is string => Boolean(url)),
+      userConfig.links.github,
+      userConfig.links.linkedin,
+      userConfig.links.instagram,
+    ]),
+  );
+
+  const personSchema = personJsonLd({
+    name: data.aboutMe?.name || userConfig.name,
+    jobTitle: data.aboutMe?.role || userConfig.role,
+    url: siteConfig.url,
+    sameAs,
+    image: profileImage,
+    description:
+      getLocalized(data.aboutMe, "bio", defaultLang) || userConfig.about,
+  });
+
   return (
     <LanguageProvider>
       <SiteDataProvider initialData={siteData}>
+        <JsonLd data={personSchema} />
         <div className="space-y-10 sm:space-y-16 max-w-2xl mx-auto w-full">
           <FadeIn delay={0.1}>
             <Info />

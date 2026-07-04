@@ -11,6 +11,7 @@ import { MaintenanceGuard } from "@/components/maintenance-guard";
 import { Dock } from "@/components/navigation/dock";
 import { Intro } from "@/components/home/intro";
 import { EasterEgg } from "@/components/easter-egg";
+import { HtmlLangUpdater } from "@/components/html-lang-updater";
 import { siteConfig } from "@/config/site";
 import Image from "next/image";
 import Link from "next/link";
@@ -70,6 +71,7 @@ export const metadata: Metadata = {
       "application/rss+xml": `${siteConfig.url}/feed.xml`,
     },
   },
+  manifest: "/manifest.webmanifest",
   other: {
     darkreader: "disable",
   },
@@ -82,7 +84,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="tr"
+      lang="en"
       suppressHydrationWarning
       className={`${GeistSans.variable} ${GeistMono.variable}`}
     >
@@ -99,6 +101,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <LanguageProvider>
+              <HtmlLangUpdater />
               <SiteDataProvider>
                 <MaintenanceGuard>
                   <Link

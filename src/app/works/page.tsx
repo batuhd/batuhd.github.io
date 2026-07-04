@@ -1,8 +1,9 @@
 import { Suspense } from "react";
-import { fetchWorksData } from "@/lib/data";
+import { fetchWorksData, getLocalized } from "@/lib/data";
 import { Metadata } from "next";
 import { WorksContent } from "./works-content";
 import { siteConfig } from "@/config/site";
+import { JsonLd, softwareApplicationJsonLd } from "@/components/json-ld";
 
 export const revalidate = 60;
 
@@ -44,16 +45,43 @@ export async function generateMetadata({
   };
 }
 
-export default async function WorksPage() {
+export default async function WorksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ project?: string }>;
+}) {
+  const { project } = await searchParams;
   const { projects, entityMap, relatedBlogs } = await fetchWorksData();
 
+  const selectedProject = project ? projects.find((p) => p.id === project) : null;
+  const softwareSchema = selectedProject
+    ? softwareApplicationJsonLd({
+        name: getLocalized(selectedProject, "title", "en"),
+        description: getLocalized(selectedProject, "description", "en"),
+        url: selectedProject.link
+          ? selectedProject.link.startsWith("/")
+            ? `${siteConfig.url}${selectedProject.link}`
+            : selectedProject.link
+          : `${siteConfig.url}/works?project=${selectedProject.id}`,
+        author: siteConfig.name,
+        image: selectedProject.image
+          ? selectedProject.image.startsWith("/")
+            ? `${siteConfig.url}${selectedProject.image}`
+            : selectedProject.image
+          : undefined,
+      })
+    : null;
+
   return (
-    <Suspense fallback={<div className="min-h-screen" />}>
-      <WorksContent
-        initialProjects={projects}
-        entityMap={entityMap}
-        relatedBlogs={relatedBlogs}
-      />
-    </Suspense>
+    <>
+      {softwareSchema && <JsonLd data={softwareSchema} />}
+      <Suspense fallback={<div className="min-h-screen" />}>
+        <WorksContent
+          initialProjects={projects}
+          entityMap={entityMap}
+          relatedBlogs={relatedBlogs}
+        />
+      </Suspense>
+    </>
   );
 }

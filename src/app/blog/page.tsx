@@ -1,8 +1,9 @@
 import { Suspense } from "react";
-import { fetchBlogData } from "@/lib/data";
+import { fetchBlogData, getLocalized } from "@/lib/data";
 import { Metadata } from "next";
 import { BlogContent } from "./blog-content";
 import { siteConfig } from "@/config/site";
+import { JsonLd, articleJsonLd } from "@/components/json-ld";
 
 export const revalidate = 60;
 
@@ -44,12 +45,36 @@ export async function generateMetadata({
   };
 }
 
-export default async function BlogPage() {
+export default async function BlogPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ post?: string }>;
+}) {
+  const { post } = await searchParams;
   const { blogs, entityMap } = await fetchBlogData();
 
+  const selectedBlog = post ? blogs.find((b) => b.id === post) : null;
+  const articleSchema = selectedBlog
+    ? articleJsonLd({
+        title: getLocalized(selectedBlog, "title", "en"),
+        description: getLocalized(selectedBlog, "excerpt", "en"),
+        url: `${siteConfig.url}/blog?post=${selectedBlog.id}`,
+        author: siteConfig.name,
+        image: selectedBlog.image_url
+          ? selectedBlog.image_url.startsWith("/")
+            ? `${siteConfig.url}${selectedBlog.image_url}`
+            : selectedBlog.image_url
+          : undefined,
+        datePublished: selectedBlog.date,
+      })
+    : null;
+
   return (
-    <Suspense fallback={<div className="min-h-screen" />}>
-      <BlogContent initialBlogs={blogs} entityMap={entityMap} />
-    </Suspense>
+    <>
+      {articleSchema && <JsonLd data={articleSchema} />}
+      <Suspense fallback={<div className="min-h-screen" />}>
+        <BlogContent initialBlogs={blogs} entityMap={entityMap} />
+      </Suspense>
+    </>
   );
 }
