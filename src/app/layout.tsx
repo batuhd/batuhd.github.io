@@ -34,6 +34,9 @@ export const metadata: Metadata = {
     apple: "/media/yuvarlaklogobeyaz.png",
   },
   description: siteConfig.description,
+  authors: [{ name: siteConfig.name, url: siteConfig.url }],
+  creator: siteConfig.name,
+  publisher: siteConfig.name,
   openGraph: {
     title: siteConfig.name,
     description: siteConfig.description,
