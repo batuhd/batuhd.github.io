@@ -140,13 +140,12 @@ export function EasterEgg() {
         const { data, error } = (await supabase
           ?.from("easter_egg_config")
           .select("*")
-          .limit(1)
-          .single()) ?? { data: null, error: null };
+          .limit(1)) ?? { data: null, error: null };
 
         if (error) {
           console.error("Easter egg config fetch error:", error);
-        } else if (data) {
-          setConfig(data as EasterEggConfig);
+        } else if (data && data.length > 0) {
+          setConfig(data[0] as EasterEggConfig);
         }
       } catch (e) {
         console.error("Easter egg config exception:", e);

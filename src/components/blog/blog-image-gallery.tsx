@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
@@ -26,19 +26,47 @@ export function BlogImageGallery({
 
   if (allImages.length === 0) return null;
 
-  const handlePrev = (e?: React.MouseEvent) => {
+  const handlePrev = useCallback((e?: { stopPropagation: () => void }) => {
     e?.stopPropagation();
     setCurrentIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
-  };
+  }, [allImages.length]);
 
-  const handleNext = (e?: React.MouseEvent) => {
+  const handleNext = useCallback((e?: { stopPropagation: () => void }) => {
     e?.stopPropagation();
     setCurrentIndex((prev) => (prev === allImages.length - 1 ? 0 : prev + 1));
-  };
+  }, [allImages.length]);
 
   const handleThumbnailClick = (index: number) => {
     setCurrentIndex(index);
   };
+
+  // Keyboard navigation for the gallery and lightbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (allImages.length <= 1) return;
+      if (e.key === "ArrowLeft") {
+        handlePrev(e);
+      } else if (e.key === "ArrowRight") {
+        handleNext(e);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [allImages.length, handlePrev, handleNext]);
+
+  // Close lightbox with Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && lightboxOpen) {
+        e.stopPropagation();
+        setLightboxOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxOpen]);
 
   return (
     <>

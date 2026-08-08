@@ -21,6 +21,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { useLanguage } from "@/context/language-context";
 import Link from "next/link";
+import { BlogImageGallery } from "@/components/blog/blog-image-gallery";
 import type { ProjectWithImages } from "@/lib/data";
 
 interface LinkedEntity {
@@ -253,58 +254,23 @@ export function WorksContent({
 
               {/* Content */}
               <div className="overflow-y-auto p-4 sm:p-8">
-                {selectedProject.image &&
-                  typeof selectedProject.image === "string" && (
-                    <div className="mb-6 space-y-3">
-                      <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-muted">
-                        <img
-                          src={
-                            selectedProject.image.startsWith("http") ||
-                            selectedProject.image.startsWith("/")
-                              ? selectedProject.image
-                              : `/${selectedProject.image}`
-                          }
-                          alt={String(selectedProject.title || "")}
-                          className="absolute inset-0 h-full w-full object-cover"
-                        />
-                      </div>
-                      {/* Additional Images Gallery */}
-                      {selectedProject.images &&
-                        selectedProject.images.length > 0 && (
-                          <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar snap-x">
-                            <div className="relative aspect-video h-20 sm:h-24 flex-shrink-0 snap-start overflow-hidden rounded-md bg-muted border-2 border-primary">
-                              <img
-                                src={
-                                  selectedProject.image.startsWith("http") ||
-                                  selectedProject.image.startsWith("/")
-                                    ? selectedProject.image
-                                    : `/${selectedProject.image}`
-                                }
-                                alt="Main image"
-                                className="h-full w-full object-cover"
-                              />
-                            </div>
-                            {selectedProject.images.map((img, i) => (
-                              <div
-                                key={i}
-                                className="relative aspect-video h-20 sm:h-24 flex-shrink-0 snap-start overflow-hidden rounded-md bg-muted border border-border hover:border-primary/50 transition-colors"
-                              >
-                                <img
-                                  src={
-                                    img.image_url.startsWith("http") ||
-                                    img.image_url.startsWith("/")
-                                      ? img.image_url
-                                      : `/${img.image_url}`
-                                  }
-                                  alt={`Additional image ${i + 1}`}
-                                  className="h-full w-full object-cover cursor-pointer"
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                    </div>
-                  )}
+                {(selectedProject.image ||
+                  selectedProject.images?.length > 0) && (
+                  <div className="mb-6">
+                    <BlogImageGallery
+                      images={(selectedProject.images || []).map((img) => ({
+                        image_url: img.image_url,
+                        caption: img.caption || undefined,
+                      }))}
+                      mainImage={selectedProject.image || undefined}
+                      title={getLocalized(
+                        selectedProject,
+                        "title",
+                        "Untitled Project",
+                      )}
+                    />
+                  </div>
+                )}
 
                 <h1 className="mb-4 text-xl sm:text-3xl font-bold tracking-tight">
                   {getLocalized(selectedProject, "title", "Untitled Project")}

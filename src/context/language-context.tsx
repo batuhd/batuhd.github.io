@@ -26,7 +26,7 @@ interface LanguageContextType {
   t: (key: string, params?: Record<string, string | number>) => string;
   getLocalized: (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    item: Record<string, any>,
+    item: Record<string, any> | null | undefined,
     field: string,
     fallback?: string
   ) => string;
@@ -72,10 +72,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
    */
   const getLocalized = (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    item: Record<string, any>,
+    item: Record<string, any> | null | undefined,
     field: string,
     fallback = ""
   ) => {
+    if (!item) return fallback;
     if (locale !== "en") {
       const localizedKey = `${field}_${locale}`;
       if (item[localizedKey] && String(item[localizedKey]).trim()) {

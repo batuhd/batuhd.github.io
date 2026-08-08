@@ -97,10 +97,15 @@ export default function CreditsPage() {
                 <p className="font-medium text-sm">Geist Mono</p>
                 <p className="text-xs text-muted-foreground">Code</p>
               </div>
-              <div className="p-3 rounded-xl bg-card border text-center">
-                <p className="font-medium text-sm">Epetri</p>
+              <a
+                href="https://www.atypography.com/product-page/epetri"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-3 rounded-xl bg-card border text-center hover:border-primary/50 transition-colors group"
+              >
+                <p className="font-medium text-sm group-hover:text-primary transition-colors">Epetri</p>
                 <p className="text-xs text-muted-foreground">Logo</p>
-              </div>
+              </a>
             </div>
           </div>
         </FadeIn>
