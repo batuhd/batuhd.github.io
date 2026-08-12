@@ -66,6 +66,9 @@ desktop.ini
 .opencode/
 .playwright-mcp/
 dev.log
+.agents/
+skills-lock.json
+lint-report.json
 
 #kişisel
 /csv

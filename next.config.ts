@@ -5,6 +5,9 @@ const supabaseProjectUrl =
 
 const nextConfig: NextConfig = {
   // ISR optimization
+  images: {
+    unoptimized: true,
+  },
   experimental: {
     // Optimize package imports for faster builds
     optimizePackageImports: ["lucide-react", "@tanstack/react-query"],
