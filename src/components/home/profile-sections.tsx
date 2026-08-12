@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useSyncExternalStore } from "react";
+
+const emptySubscribe = () => () => {};
 
 // Fisher-Yates shuffle algorithm
 function shuffleArray<T>(array: T[]): T[] {
@@ -14,18 +16,21 @@ function shuffleArray<T>(array: T[]): T[] {
 import { useLanguage } from "@/context/language-context";
 import { useSiteData } from "@/context/site-data-context";
 import { ExternalLink, FolderKanban, PenTool, X } from "lucide-react";
+import Image from "next/image";
 import { ExpandableText } from "@/components/ui/expandable-text";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
-import { sanitizeUrl } from "@/lib/utils";
 import type {
   Project,
   Blog,
   Experience,
   Education,
   Activity,
-  Certification,
   RoleEntry,
+  Certification,
+  CertificationSkill,
+  SkillCategory,
+  Language,
 } from "@/types";
 
 function parseDate(dateStr: string | null, today?: Date | null): Date | null {
@@ -117,7 +122,7 @@ function formatDate(dateStr: string | null, locale: string): string {
     }).format(d);
     // Capitalize first letter
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
-  } catch (e) {
+  } catch {
     return dateStr;
   }
 }
@@ -221,11 +226,6 @@ function calculateRolesDuration(
 export function Experience() {
   const { locale, getLocalized, t } = useLanguage();
   const { experiences, projects, blogs } = useSiteData();
-  const [today, setToday] = useState<Date | null>(null);
-
-  useEffect(() => {
-    setToday(new Date());
-  }, []);
 
   // Optimize: Pre-calculate related items to avoid IIFE in render
   const relatedItemsMap = useMemo(() => {
@@ -253,7 +253,7 @@ export function Experience() {
           const related = relatedItemsMap[exp.id];
           const hasRelated =
             related.projects.length > 0 || related.blogs.length > 0;
-          const roles = sortRolesByDate(exp.roles || [], today);
+          const roles = sortRolesByDate(exp.roles || []);
           const hasRoles = roles.length > 0;
           const allRoles = hasRoles
             ? sortRolesByDate([
@@ -280,9 +280,11 @@ export function Experience() {
               <div className="rounded-2xl border bg-card/40 p-4 sm:p-5 transition-colors hover:bg-accent/40">
                 <div className="flex gap-4">
                   {exp.logo_url ? (
-                    <img
+                    <Image
                       src={exp.logo_url}
                       alt={exp.company}
+                      width={48}
+                      height={48}
                       className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl object-contain flex-shrink-0"
                     />
                   ) : (
@@ -303,9 +305,9 @@ export function Experience() {
                             {exp.location}
                           </p>
                         )}
-                        {calculateRolesDuration(allRoles, locale, today) && (
+                        {calculateRolesDuration(allRoles, locale) && (
                           <p className="text-xs text-muted-foreground/80">
-                            {calculateRolesDuration(allRoles, locale, today)}
+                            {calculateRolesDuration(allRoles, locale)}
                           </p>
                         )}
                         <div className="relative mt-3 border-l border-primary/20 pl-4 space-y-5">
@@ -318,7 +320,6 @@ export function Experience() {
                               role.end_date,
                               role.is_current,
                               locale,
-                              today,
                             );
                             return (
                               <div key={idx} className="relative">
@@ -373,7 +374,6 @@ export function Experience() {
                             exp.end_date,
                             exp.is_current,
                             locale,
-                            today,
                           ) && (
                             <>
                               <span>·</span>
@@ -383,7 +383,6 @@ export function Experience() {
                                   exp.end_date,
                                   exp.is_current,
                                   locale,
-                                  today,
                                 )}
                               </span>
                             </>
@@ -439,11 +438,6 @@ export function Experience() {
 export function Education() {
   const { locale, getLocalized, t } = useLanguage();
   const { educations, projects, blogs } = useSiteData();
-  const [today, setToday] = useState<Date | null>(null);
-
-  useEffect(() => {
-    setToday(new Date());
-  }, []);
 
   // Optimize: Pre-calculate related items to avoid IIFE in render
   const relatedItemsMap = useMemo(() => {
@@ -478,9 +472,11 @@ export function Education() {
               <div className="rounded-2xl border bg-card/40 p-4 sm:p-5 transition-colors hover:bg-accent/40">
                 <div className="flex gap-4">
                   {edu.logo_url ? (
-                    <img
+                    <Image
                       src={edu.logo_url}
                       alt={edu.university}
+                      width={48}
+                      height={48}
                       className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl object-contain flex-shrink-0"
                     />
                   ) : (
@@ -526,7 +522,6 @@ export function Education() {
                         edu.end_date,
                         !!edu.is_current,
                         locale,
-                        today,
                       ) && (
                         <>
                           <span>·</span>
@@ -536,7 +531,6 @@ export function Education() {
                               edu.end_date,
                               !!edu.is_current,
                               locale,
-                              today,
                             )}
                           </span>
                         </>
@@ -581,7 +575,7 @@ export function Education() {
 }
 
 export function Languages() {
-  const { locale, getLocalized, t } = useLanguage();
+  const { getLocalized, t } = useLanguage();
   const { languages, projects, blogs } = useSiteData();
 
   if (languages.length === 0) return null;
@@ -626,7 +620,7 @@ export function Languages() {
         {t("home.languages")}
       </h2>
       <div className="flex flex-wrap gap-2 sm:gap-3 ml-3">
-        {languages.map((lang: any) => {
+        {languages.map((lang: Language) => {
           const flag = getLanguageFlag(lang.name);
           return (
             <span
@@ -654,17 +648,17 @@ export function Languages() {
               )}
               {(() => {
                 const relatedProjects = projects.filter(
-                  (p: any) => p.linked_language_id === lang.id,
+                  (p: Project) => p.linked_language_id === lang.id,
                 );
                 const relatedBlogs = blogs.filter(
-                  (b: any) => b.linked_language_id === lang.id,
+                  (b: Blog) => b.linked_language_id === lang.id,
                 );
                 if (relatedProjects.length === 0 && relatedBlogs.length === 0)
                   return null;
 
                 return (
                   <div className="w-full mt-2 pt-2 border-t border-border/50 flex flex-wrap gap-2">
-                    {relatedProjects.map((p: any) => (
+                    {relatedProjects.map((p: Project) => (
                       <Link
                         key={p.id}
                         href={`/works?project=${p.id}`}
@@ -675,7 +669,7 @@ export function Languages() {
                         <ExternalLink className="h-2 w-2 opacity-0 group-hover/link:opacity-50 -ml-0.5" />
                       </Link>
                     ))}
-                    {relatedBlogs.map((b: any) => (
+                    {relatedBlogs.map((b: Blog) => (
                       <Link
                         key={b.id}
                         href={`/blog?post=${b.id}`}
@@ -700,11 +694,6 @@ export function Languages() {
 export function Activities() {
   const { locale, getLocalized, t } = useLanguage();
   const { activities, projects, blogs } = useSiteData();
-  const [today, setToday] = useState<Date | null>(null);
-
-  useEffect(() => {
-    setToday(new Date());
-  }, []);
 
   if (activities.length === 0) return null;
 
@@ -714,8 +703,8 @@ export function Activities() {
         {t("home.activities")}
       </h2>
       <div className="relative border-l border-primary/20 ml-3 sm:ml-4 space-y-8 py-2">
-        {activities.map((act: any) => {
-          const roles = sortRolesByDate(act.roles || [], today);
+        {activities.map((act: Activity) => {
+          const roles = sortRolesByDate(act.roles || []);
           const hasRoles = roles.length > 0;
           const allRoles = hasRoles
             ? sortRolesByDate([
@@ -742,9 +731,11 @@ export function Activities() {
             <div className="rounded-2xl border bg-card/40 p-4 sm:p-5 transition-colors hover:bg-accent/40">
               <div className="flex gap-4">
                 {act.logo_url ? (
-                  <img
+                  <Image
                     src={act.logo_url}
                     alt={act.organization}
+                    width={48}
+                    height={48}
                     className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl object-contain flex-shrink-0"
                   />
                 ) : (
@@ -773,9 +764,9 @@ export function Activities() {
                           </a>
                         )}
                       </div>
-                      {calculateRolesDuration(allRoles, locale, today) && (
+                      {calculateRolesDuration(allRoles, locale) && (
                         <p className="text-xs text-muted-foreground/80">
-                          {calculateRolesDuration(allRoles, locale, today)}
+                          {calculateRolesDuration(allRoles, locale)}
                         </p>
                       )}
                       <div className="relative mt-3 border-l border-primary/20 pl-4 space-y-5">
@@ -788,7 +779,6 @@ export function Activities() {
                             role.end_date,
                             role.is_current,
                             locale,
-                            today,
                           );
                           return (
                             <div key={idx} className="relative">
@@ -855,7 +845,6 @@ export function Activities() {
                           act.end_date,
                           !!act.is_current,
                           locale,
-                          today,
                         ) && (
                           <>
                             <span>·</span>
@@ -865,7 +854,6 @@ export function Activities() {
                                 act.end_date,
                                 !!act.is_current,
                                 locale,
-                                today,
                               )}
                             </span>
                           </>
@@ -880,10 +868,10 @@ export function Activities() {
                   )}
                   {(() => {
                     const relatedProjects = projects.filter(
-                      (p: any) => p.linked_activity_id === act.id,
+                      (p: Project) => p.linked_activity_id === act.id,
                     );
                     const relatedBlogs = blogs.filter(
-                      (b: any) => b.linked_activity_id === act.id,
+                      (b: Blog) => b.linked_activity_id === act.id,
                     );
                     if (
                       relatedProjects.length === 0 &&
@@ -893,7 +881,7 @@ export function Activities() {
 
                     return (
                       <div className="pt-4 mt-4 border-t border-border/50 flex flex-wrap gap-2">
-                        {relatedProjects.map((p: any) => (
+                        {relatedProjects.map((p: Project) => (
                           <Link
                             key={p.id}
                             href={`/works?project=${p.id}`}
@@ -904,7 +892,7 @@ export function Activities() {
                             <ExternalLink className="h-2.5 w-2.5 opacity-50" />
                           </Link>
                         ))}
-                        {relatedBlogs.map((b: any) => (
+                        {relatedBlogs.map((b: Blog) => (
                           <Link
                             key={b.id}
                             href={`/blog?post=${b.id}`}
@@ -938,23 +926,26 @@ export function Certifications() {
     projects,
     blogs,
   } = useSiteData();
-  const [selectedCert, setSelectedCert] = useState<any | null>(null);
+  const [selectedCert, setSelectedCert] = useState<Certification | null>(null);
   const [showAllCerts, setShowAllCerts] = useState(false);
-  const [isClient, setIsClient] = useState(false);
   // Mark as client-side only after mount to avoid hydration mismatch
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  const isClient = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
 
   // URL'den sertifika açma (örn: /certifications?cert=uuid)
   useEffect(() => {
     const cert = new URLSearchParams(window.location.search).get("cert");
     if (!cert || certifications.length === 0) return;
-    const target = certifications.find((c: any) => c.id === cert);
+    const target = certifications.find((c: Certification) => c.id === cert);
+    // Deep-link: window'a erişim sadece client'ta mümkün, hydration güvenli olduğu için effect'te set edilir
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (target) setSelectedCert(target);
   }, [certifications]);
 
-  const openCert = (cert: any) => {
+  const openCert = (cert: Certification) => {
     setSelectedCert(cert);
     window.history.pushState(null, "", `/certifications?cert=${cert.id}`);
   };
@@ -975,13 +966,13 @@ export function Certifications() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedCert]);
 
-  if (certifications.length === 0) return null;
-
   // Only shuffle on client side to prevent hydration mismatch
   // Use memo to prevent reshuffling on every render
   const displayCerts = useMemo(() => {
     return isClient ? shuffleArray(certifications) : certifications;
   }, [isClient, certifications]);
+
+  if (certifications.length === 0) return null;
 
   // Split certifications into two rows for marquee effect
   const half = Math.floor(displayCerts.length / 2);
@@ -992,16 +983,18 @@ export function Certifications() {
   const duplicatedFirstRow = [...firstRow, ...firstRow, ...firstRow];
   const duplicatedSecondRow = [...secondRow, ...secondRow, ...secondRow];
 
-  const CertItem = ({ cert }: { cert: any }) => {
+  const CertItem = ({ cert }: { cert: Certification }) => {
     return (
       <div
         onClick={() => openCert(cert)}
         className="group flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-xl border bg-card/80 transition-all hover:bg-accent/50 cursor-pointer flex-shrink-0 h-12 min-w-0"
       >
         {cert.icon_url && (
-          <img
+          <Image
             src={cert.icon_url}
             alt={cert.name}
+            width={24}
+            height={24}
             className="h-5 w-5 sm:h-6 sm:w-6 rounded object-cover flex-shrink-0"
           />
         )}
@@ -1092,9 +1085,11 @@ export function Certifications() {
               <div className="overflow-y-auto p-4 sm:p-8 space-y-6">
                 <div className="flex items-start gap-4">
                   {selectedCert.icon_url && (
-                    <img
+                    <Image
                       src={selectedCert.icon_url}
                       alt={selectedCert.name}
+                      width={64}
+                      height={64}
                       className="h-16 w-16 rounded-xl object-cover bg-muted/50 p-2 border flex-shrink-0"
                     />
                   )}
@@ -1125,11 +1120,11 @@ export function Certifications() {
                   const relatedSkillIds =
                     certificationSkills
                       ?.filter(
-                        (cs: any) => cs.certification_id === selectedCert.id,
+                        (cs: CertificationSkill) => cs.certification_id === selectedCert.id,
                       )
-                      .map((cs: any) => cs.skill_category_id) || [];
+                      .map((cs: CertificationSkill) => cs.skill_category_id) || [];
                   const relatedSkills =
-                    skillCategories?.filter((sc: any) =>
+                    skillCategories?.filter((sc: SkillCategory) =>
                       relatedSkillIds.includes(sc.id),
                     ) || [];
                   if (relatedSkills.length > 0) {
@@ -1139,7 +1134,7 @@ export function Certifications() {
                           {t("cert.skillsEvaluated")}
                         </h3>
                         <div className="flex flex-wrap gap-2">
-                          {relatedSkills.map((skill: any) => (
+                          {relatedSkills.map((skill: SkillCategory) => (
                             <span
                               key={skill.id}
                               className="inline-flex rounded-md bg-secondary/50 px-2.5 py-1 text-xs font-medium text-secondary-foreground shadow-sm"
@@ -1156,10 +1151,10 @@ export function Certifications() {
 
                 {(() => {
                   const relatedProjects = projects.filter(
-                    (p: any) => p.linked_certification_id === selectedCert.id,
+                    (p: Project) => p.linked_certification_id === selectedCert.id,
                   );
                   const relatedBlogs = blogs.filter(
-                    (b: any) => b.linked_certification_id === selectedCert.id,
+                    (b: Blog) => b.linked_certification_id === selectedCert.id,
                   );
                   if (relatedProjects.length === 0 && relatedBlogs.length === 0)
                     return null;
@@ -1173,7 +1168,7 @@ export function Certifications() {
                             {t("cert.relatedProjects")}
                           </h3>
                           <div className="flex flex-col gap-2">
-                            {relatedProjects.map((p: any) => (
+                            {relatedProjects.map((p: Project) => (
                               <Link
                                 key={p.id}
                                 href={`/works?project=${p.id}`}
@@ -1195,7 +1190,7 @@ export function Certifications() {
                             {t("cert.relatedArticles")}
                           </h3>
                           <div className="flex flex-col gap-2">
-                            {relatedBlogs.map((b: any) => (
+                            {relatedBlogs.map((b: Blog) => (
                               <Link
                                 key={b.id}
                                 href={`/blog?post=${b.id}`}
@@ -1256,7 +1251,7 @@ export function Certifications() {
 
               <div className="overflow-y-auto p-3 sm:p-6 w-full">
                 <div className="grid grid-cols-1 gap-2 sm:gap-3 w-full">
-                  {certifications.map((cert: any) => (
+                  {certifications.map((cert: Certification) => (
                     <div
                       key={cert.id}
                       onClick={() => {
@@ -1266,9 +1261,11 @@ export function Certifications() {
                       className="group flex items-start gap-2 sm:gap-3 p-2.5 sm:p-4 rounded-xl border bg-card/50 transition-all hover:bg-accent/50 cursor-pointer min-w-0 w-full overflow-hidden"
                     >
                       {cert.icon_url && (
-                        <img
+                        <Image
                           src={cert.icon_url}
                           alt={cert.name}
+                          width={40}
+                          height={40}
                           className="h-10 w-10 rounded-lg object-cover flex-shrink-0"
                         />
                       )}

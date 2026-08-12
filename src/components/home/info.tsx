@@ -15,7 +15,7 @@ export function Info() {
   const name = aboutMe?.name || userConfig.name;
   const tagline = aboutMe ? (getLocalized(aboutMe, "hero_tagline") || userConfig.heroTagline) : (loaded ? userConfig.heroTagline : "");
 
-  const [clickCount, setClickCount] = useState(0);
+  const [, setClickCount] = useState(0);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
 
   const handlePhotoClick = () => {
@@ -35,12 +35,12 @@ export function Info() {
         {aboutMe?.show_profile_photo !== false && (
           <div onClick={handlePhotoClick} className="cursor-pointer select-none relative group transition-transform active:scale-95">
             {aboutMe?.profile_photo_url && sanitizeUrl(aboutMe.profile_photo_url) ? (
-              <img
+              <Image
                 src={sanitizeUrl(aboutMe.profile_photo_url) || ""}
                 alt={`${name} - Profile Photo`}
-                loading="eager"
-                fetchPriority="high"
-                decoding="async"
+                width={96}
+                height={96}
+                priority
                 className="rounded-2xl object-cover w-20 h-20 sm:w-24 sm:h-24 ring-2 ring-transparent group-hover:ring-primary/20 transition-all shadow-md"
               />
             ) : (

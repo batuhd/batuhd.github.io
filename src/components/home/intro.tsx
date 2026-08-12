@@ -2,14 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { prefersReducedMotion } from "@/lib/utils";
 
 export function Intro() {
   const [showIntro, setShowIntro] = useState(false);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
+  // Intro, client'ta sessionStorage ve reducedMotion kontrolünden sonra gösterilir
   useEffect(() => {
     const hasSeenIntro = sessionStorage.getItem("hasSeenIntro");
 
-    if (hasSeenIntro) return;
+    if (hasSeenIntro || prefersReducedMotion()) {
+      // Mark as seen so it never runs again this session
+      if (!hasSeenIntro) {
+        sessionStorage.setItem("hasSeenIntro", "true");
+      }
+      return;
+    }
 
     setShowIntro(true);
 
@@ -20,6 +29,7 @@ export function Intro() {
 
     return () => clearTimeout(timer);
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   return (
     <AnimatePresence>

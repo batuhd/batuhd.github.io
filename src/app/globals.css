@@ -752,3 +752,38 @@ pre[class*="language-"] {
 .markdown-editor-textarea::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.5);
 }
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Keep certification marquee scrolling even with reduced motion */
+  .animate-marquee-left,
+  .animate-marquee-right {
+    animation-duration: 10s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* Focus visible styles for keyboard navigation */
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Ensure focused elements are not obscured by sticky dock */
+:target,
+:focus {
+  scroll-margin-bottom: 100px;
+}

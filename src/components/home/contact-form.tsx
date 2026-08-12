@@ -1,11 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import { z } from "zod";
 import { Send, Loader2, CheckCircle2 } from "lucide-react";
 import { userConfig } from "@/config/user";
 import { useLanguage } from "@/context/language-context";
 
 type FormStatus = "idle" | "sending" | "success" | "error";
+
+const contactSchema = z.object({
+  name: z
+    .string()
+    .min(2, "home.contact.errorNameTooShort")
+    .max(100, "home.contact.errorNameTooLong"),
+  email: z
+    .string()
+    .email("home.contact.errorEmailInvalid")
+    .max(254, "home.contact.errorEmailTooLong"),
+  message: z
+    .string()
+    .min(10, "home.contact.errorMessageTooShort")
+    .max(5000, "home.contact.errorMessageTooLong"),
+});
+
+type ContactFormData = z.infer<typeof contactSchema>;
 
 const STATUS_RESET_MS = 4000;
 
@@ -14,16 +32,38 @@ const inputStyles =
 
 export function ContactForm() {
   const [status, setStatus] = useState<FormStatus>("idle");
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<keyof ContactFormData, string>>
+  >({});
   const { t } = useLanguage();
 
   const resetStatus = () => setTimeout(() => setStatus("idle"), STATUS_RESET_MS);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setStatus("sending");
+    setFieldErrors({});
 
     const form = e.currentTarget;
     const formData = new FormData(form);
+
+    const payload = {
+      name: String(formData.get("name") ?? "").trim(),
+      email: String(formData.get("email") ?? "").trim(),
+      message: String(formData.get("message") ?? "").trim(),
+    };
+
+    const result = contactSchema.safeParse(payload);
+    if (!result.success) {
+      const flat = result.error.flatten().fieldErrors;
+      setFieldErrors({
+        name: flat.name?.[0],
+        email: flat.email?.[0],
+        message: flat.message?.[0],
+      });
+      return;
+    }
+
+    setStatus("sending");
 
     try {
       if (
@@ -43,11 +83,7 @@ export function ContactForm() {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({
-          name: formData.get("name"),
-          email: formData.get("email"),
-          message: formData.get("message"),
-        }),
+        body: JSON.stringify(result.data),
       });
 
       if (!res.ok) throw new Error("Failed");
@@ -81,9 +117,16 @@ export function ContactForm() {
               name="name"
               required
               autoComplete="name"
+              aria-invalid={fieldErrors.name ? "true" : undefined}
+              aria-describedby={fieldErrors.name ? "name-error" : undefined}
               className={inputStyles}
               placeholder={t("home.contact.namePlaceholder")}
             />
+            {fieldErrors.name && (
+              <p id="name-error" className="text-sm text-destructive">
+                {t(fieldErrors.name)}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <label
@@ -98,9 +141,16 @@ export function ContactForm() {
               name="email"
               required
               autoComplete="email"
+              aria-invalid={fieldErrors.email ? "true" : undefined}
+              aria-describedby={fieldErrors.email ? "email-error" : undefined}
               className={inputStyles}
               placeholder={t("home.contact.emailPlaceholder")}
             />
+            {fieldErrors.email && (
+              <p id="email-error" className="text-sm text-destructive">
+                {t(fieldErrors.email)}
+              </p>
+            )}
           </div>
         </div>
         <div className="space-y-2">
@@ -115,9 +165,18 @@ export function ContactForm() {
             name="message"
             required
             rows={4}
+            aria-invalid={fieldErrors.message ? "true" : undefined}
+            aria-describedby={
+              fieldErrors.message ? "message-error" : undefined
+            }
             className={`${inputStyles} resize-none`}
             placeholder={t("home.contact.messagePlaceholder")}
           />
+          {fieldErrors.message && (
+            <p id="message-error" className="text-sm text-destructive">
+              {t(fieldErrors.message)}
+            </p>
+          )}
         </div>
         <button
           type="submit"

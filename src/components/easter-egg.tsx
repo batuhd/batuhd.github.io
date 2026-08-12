@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import { sanitizeUrl, prefersReducedMotion } from "@/lib/utils";
 import { X } from "lucide-react";
 
 interface EasterEggItem {
@@ -228,7 +229,7 @@ export function EasterEgg() {
 
   return (
     <>
-      <HeartsCanvas active={show} />
+      <HeartsCanvas active={show && !prefersReducedMotion()} />
       <div
         className="fixed inset-0 z-[105] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
         onClick={() => setShow(false)}
@@ -280,7 +281,7 @@ export function EasterEgg() {
                     <div className="relative aspect-[4/5] overflow-hidden rounded-lg bg-muted">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={egg.image_url}
+                        src={sanitizeUrl(egg.image_url) || ""}
                         alt={egg.caption || config?.display_subtitle || ""}
                         loading="lazy"
                         className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-105"

@@ -2,8 +2,8 @@ import { fetchHomeData, getLocalized } from "@/lib/data";
 import { userConfig } from "@/config/user";
 import { siteConfig } from "@/config/site";
 import { sanitizeUrl } from "@/lib/utils";
-import { LanguageProvider } from "@/context/language-context";
 import { SiteDataProvider } from "@/context/site-data-context";
+import type { Project, Blog } from "@/types";
 import { Info } from "@/components/home/info";
 import { JsonLd, personJsonLd, websiteJsonLd } from "@/components/json-ld";
 import { About } from "@/components/home/about";
@@ -44,8 +44,8 @@ export default async function Home() {
     certifications: data.certifications,
     certificationSkills: data.certificationSkills,
     sectionOrder: data.sectionOrder,
-    projects: data.projects || [],
-    blogs: data.blogs || [],
+    projects: (data.projects || []) as Project[],
+    blogs: (data.blogs || []) as Blog[],
     loaded: true, // Server'da yüklendi
     isMaintenance: data.sectionOrder.some(
       (s) => s.section_id === "maintenance_mode",
@@ -119,10 +119,9 @@ export default async function Home() {
   });
 
   return (
-    <LanguageProvider>
-      <SiteDataProvider initialData={siteData}>
-        <JsonLd data={[websiteSchema, personSchema]} />
-        <div className="space-y-10 sm:space-y-16 max-w-2xl mx-auto w-full">
+    <SiteDataProvider initialData={siteData}>
+      <JsonLd data={[websiteSchema, personSchema]} />
+      <div className="space-y-10 sm:space-y-16 max-w-2xl mx-auto w-full">
           <FadeIn delay={0.1}>
             <Info />
           </FadeIn>
@@ -167,7 +166,6 @@ export default async function Home() {
             </footer>
           </FadeIn>
         </div>
-      </SiteDataProvider>
-    </LanguageProvider>
+    </SiteDataProvider>
   );
 }

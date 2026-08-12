@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
@@ -9,6 +9,7 @@ import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Copy, Check, ExternalLink } from "lucide-react";
+import Image from "next/image";
 import { cn, sanitizeUrl } from "@/lib/utils";
 
 // Custom schema - className attribute izni ver
@@ -117,6 +118,120 @@ function CodeBlock({ language, value }: CodeBlockProps) {
   );
 }
 
+function MarkdownCode({
+  className,
+  children,
+  ...props
+}: React.ComponentPropsWithoutRef<"code">) {
+  const match = /language-(\w+)/.exec(className || "");
+  const language = match ? match[1] : "";
+  const value = String(children).replace(/\n$/, "");
+
+  if (match) {
+    return <CodeBlock language={language} value={value} />;
+  }
+
+  return (
+    <code className="inline-code" {...props}>
+      {children}
+    </code>
+  );
+}
+
+function MarkdownPre({ children }: React.ComponentPropsWithoutRef<"pre">) {
+  return <>{children}</>;
+}
+
+function MarkdownLink({
+  href,
+  children,
+}: React.ComponentPropsWithoutRef<"a">) {
+  const safeHref = sanitizeUrl(href || "");
+  if (!safeHref) return <>{children}</>;
+
+  const isExternal = safeHref.startsWith("http");
+
+  return (
+    <a
+      href={safeHref}
+      className="text-primary hover:underline underline-offset-2 inline-flex items-center gap-1 transition-opacity hover:opacity-80"
+      target={isExternal ? "_blank" : undefined}
+      rel={isExternal ? "noopener noreferrer" : undefined}
+    >
+      {children}
+      {isExternal && <ExternalLink className="h-3 w-3" />}
+    </a>
+  );
+}
+
+function MarkdownImage({
+  src,
+  alt,
+}: React.ComponentPropsWithoutRef<"img">) {
+  const srcStr = typeof src === "string" ? src : "";
+  const safeSrc = sanitizeUrl(srcStr);
+  if (!safeSrc) return null;
+
+  return (
+    <figure className="my-6">
+      <Image
+        src={safeSrc}
+        alt={alt || ""}
+        width={0}
+        height={0}
+        sizes="100vw"
+        className="rounded-lg max-w-full h-auto mx-auto"
+        loading="lazy"
+      />
+      {alt && (
+        <figcaption className="text-center text-sm text-muted-foreground mt-2">
+          {alt}
+        </figcaption>
+      )}
+    </figure>
+  );
+}
+
+const headingClasses: Record<number, string> = {
+  1: "text-3xl font-bold mt-8 mb-4 scroll-mt-24",
+  2: "text-2xl font-semibold mt-6 mb-3 scroll-mt-24",
+  3: "text-xl font-semibold mt-5 mb-2 scroll-mt-24",
+  4: "text-lg font-semibold mt-4 mb-2 scroll-mt-24",
+  5: "text-base font-semibold mt-4 mb-2 scroll-mt-24",
+  6: "text-sm font-semibold mt-4 mb-2 scroll-mt-24",
+};
+
+function generateId(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-");
+}
+
+interface MarkdownHeadingProps {
+  level: 1 | 2 | 3 | 4 | 5 | 6;
+  children: React.ReactNode;
+}
+
+function MarkdownHeading({ level, children }: MarkdownHeadingProps) {
+  const text = String(children);
+  const id = generateId(text);
+  const Tag = `h${level}` as const;
+
+  return (
+    <Tag id={id} className={headingClasses[level]}>
+      {children}
+    </Tag>
+  );
+}
+
+const baseMarkdownComponents = {
+  code: MarkdownCode,
+  pre: MarkdownPre,
+  a: MarkdownLink,
+  img: MarkdownImage,
+};
+
 interface MarkdownRendererProps {
   content: string;
   className?: string;
@@ -134,12 +249,11 @@ export function MarkdownRenderer({
   className,
   showToc = false,
 }: MarkdownRendererProps) {
-  const [headings, setHeadings] = useState<TocItem[]>([]);
   const [activeHeading, setActiveHeading] = useState<string>("");
 
   // Extract headings for TOC
-  useEffect(() => {
-    if (!showToc) return;
+  const headings = useMemo<TocItem[]>(() => {
+    if (!showToc) return [];
 
     const extractedHeadings: TocItem[] = [];
     const lines = content.split("\n");
@@ -149,15 +263,12 @@ export function MarkdownRenderer({
       if (match) {
         const level = match[1].length;
         const text = match[2].trim();
-        const id = text
-          .toLowerCase()
-          .replace(/[^\w\s-]/g, "")
-          .replace(/\s+/g, "-");
+        const id = generateId(text);
         extractedHeadings.push({ id, text, level });
       }
     });
 
-    setHeadings(extractedHeadings);
+    return extractedHeadings;
   }, [content, showToc]);
 
   // Scroll spy for TOC
@@ -189,14 +300,6 @@ export function MarkdownRenderer({
       element.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, []);
-
-  // Generate ID for heading
-  const generateId = (text: string): string => {
-    return text
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/\s+/g, "-");
-  };
 
   return (
     <div className={cn("relative", className)}>
@@ -240,147 +343,14 @@ export function MarkdownRenderer({
           rehypePlugins={[[rehypeSanitize, customSchema]]}
           remarkPlugins={[remarkGfm, remarkBreaks, remarkEmoji]}
           components={{
-            // Headings with IDs for TOC
-            h1: ({ children }) => {
-              const text = String(children);
-              const id = generateId(text);
-              return (
-                <h1
-                  id={id}
-                  className="text-3xl font-bold mt-8 mb-4 scroll-mt-24"
-                >
-                  {children}
-                </h1>
-              );
-            },
-            h2: ({ children }) => {
-              const text = String(children);
-              const id = generateId(text);
-              return (
-                <h2
-                  id={id}
-                  className="text-2xl font-semibold mt-6 mb-3 scroll-mt-24"
-                >
-                  {children}
-                </h2>
-              );
-            },
-            h3: ({ children }) => {
-              const text = String(children);
-              const id = generateId(text);
-              return (
-                <h3
-                  id={id}
-                  className="text-xl font-semibold mt-5 mb-2 scroll-mt-24"
-                >
-                  {children}
-                </h3>
-              );
-            },
-            h4: ({ children }) => {
-              const text = String(children);
-              const id = generateId(text);
-              return (
-                <h4
-                  id={id}
-                  className="text-lg font-semibold mt-4 mb-2 scroll-mt-24"
-                >
-                  {children}
-                </h4>
-              );
-            },
-            h5: ({ children }) => {
-              const text = String(children);
-              const id = generateId(text);
-              return (
-                <h5
-                  id={id}
-                  className="text-base font-semibold mt-4 mb-2 scroll-mt-24"
-                >
-                  {children}
-                </h5>
-              );
-            },
-            h6: ({ children }) => {
-              const text = String(children);
-              const id = generateId(text);
-              return (
-                <h6
-                  id={id}
-                  className="text-sm font-semibold mt-4 mb-2 scroll-mt-24"
-                >
-                  {children}
-                </h6>
-              );
-            },
-
-            // Paragraphs
+            ...baseMarkdownComponents,
+            h1: ({ children }) => <MarkdownHeading level={1}>{children}</MarkdownHeading>,
+            h2: ({ children }) => <MarkdownHeading level={2}>{children}</MarkdownHeading>,
+            h3: ({ children }) => <MarkdownHeading level={3}>{children}</MarkdownHeading>,
+            h4: ({ children }) => <MarkdownHeading level={4}>{children}</MarkdownHeading>,
+            h5: ({ children }) => <MarkdownHeading level={5}>{children}</MarkdownHeading>,
+            h6: ({ children }) => <MarkdownHeading level={6}>{children}</MarkdownHeading>,
             p: ({ children }) => <p className="my-4 leading-7">{children}</p>,
-
-            // Links with security
-            a: ({ href, children }) => {
-              const safeHref = sanitizeUrl(href || "");
-              if (!safeHref) return <>{children}</>;
-
-              const isExternal = safeHref.startsWith("http");
-
-              return (
-                <a
-                  href={safeHref}
-                  className="text-primary hover:underline underline-offset-2 inline-flex items-center gap-1 transition-opacity hover:opacity-80"
-                  target={isExternal ? "_blank" : undefined}
-                  rel={isExternal ? "noopener noreferrer" : undefined}
-                >
-                  {children}
-                  {isExternal && <ExternalLink className="h-3 w-3" />}
-                </a>
-              );
-            },
-
-            // Code blocks with syntax highlighting
-            code: ({ className, children, ...props }) => {
-              const match = /language-(\w+)/.exec(className || "");
-              const language = match ? match[1] : "";
-              const value = String(children).replace(/\n$/, "");
-
-              if (match) {
-                return <CodeBlock language={language} value={value} />;
-              }
-
-              return (
-                <code className="inline-code" {...props}>
-                  {children}
-                </code>
-              );
-            },
-
-            // Preformatted text wrapper
-            pre: ({ children }) => <>{children}</>,
-
-            // Images
-            img: ({ src, alt }) => {
-              const srcStr = typeof src === "string" ? src : "";
-              const safeSrc = sanitizeUrl(srcStr);
-              if (!safeSrc) return null;
-
-              return (
-                <figure className="my-6">
-                  <img
-                    src={safeSrc}
-                    alt={alt || ""}
-                    className="rounded-lg max-w-full h-auto mx-auto"
-                    loading="lazy"
-                  />
-                  {alt && (
-                    <figcaption className="text-center text-sm text-muted-foreground mt-2">
-                      {alt}
-                    </figcaption>
-                  )}
-                </figure>
-              );
-            },
-
-            // Lists
             ul: ({ children }) => (
               <ul className="list-disc pl-6 my-4 space-y-1">{children}</ul>
             ),
@@ -388,18 +358,12 @@ export function MarkdownRenderer({
               <ol className="list-decimal pl-6 my-4 space-y-1">{children}</ol>
             ),
             li: ({ children }) => <li className="leading-7">{children}</li>,
-
-            // Blockquotes
             blockquote: ({ children }) => (
               <blockquote className="border-l-4 border-border pl-4 italic text-muted-foreground my-6">
                 {children}
               </blockquote>
             ),
-
-            // Horizontal rule
             hr: () => <hr className="my-8 border-border" />,
-
-            // Tables
             table: ({ children }) => (
               <div className="overflow-x-auto my-6">
                 <table className="w-full text-sm border-collapse">
@@ -420,8 +384,6 @@ export function MarkdownRenderer({
               <th className="py-3 px-4 text-left font-semibold">{children}</th>
             ),
             td: ({ children }) => <td className="py-3 px-4">{children}</td>,
-
-            // Strong and emphasis
             strong: ({ children }) => (
               <strong className="font-bold text-foreground">{children}</strong>
             ),
@@ -431,8 +393,6 @@ export function MarkdownRenderer({
                 {children}
               </del>
             ),
-
-            // Line breaks
             br: () => <br />,
           }}
         >
@@ -455,52 +415,7 @@ export function SimpleMarkdownRenderer({
       <ReactMarkdown
         rehypePlugins={[[rehypeSanitize, customSchema]]}
         remarkPlugins={[remarkGfm, remarkBreaks, remarkEmoji]}
-        components={{
-          code: ({ className, children }) => {
-            const match = /language-(\w+)/.exec(className || "");
-            const language = match ? match[1] : "";
-            const value = String(children).replace(/\n$/, "");
-
-            if (match) {
-              return <CodeBlock language={language} value={value} />;
-            }
-
-            return <code className="inline-code">{children}</code>;
-          },
-          pre: ({ children }) => <>{children}</>,
-          a: ({ href, children }) => {
-            const safeHref = sanitizeUrl(href || "");
-            if (!safeHref) return <>{children}</>;
-
-            const isExternal = safeHref.startsWith("http");
-
-            return (
-              <a
-                href={safeHref}
-                className="text-primary hover:underline underline-offset-2 inline-flex items-center gap-1"
-                target={isExternal ? "_blank" : undefined}
-                rel={isExternal ? "noopener noreferrer" : undefined}
-              >
-                {children}
-                {isExternal && <ExternalLink className="h-3 w-3" />}
-              </a>
-            );
-          },
-          img: ({ src, alt }) => {
-            const srcStr = typeof src === "string" ? src : "";
-            const safeSrc = sanitizeUrl(srcStr);
-            if (!safeSrc) return null;
-
-            return (
-              <img
-                src={safeSrc}
-                alt={alt || ""}
-                className="rounded-lg my-4 max-w-full h-auto"
-                loading="lazy"
-              />
-            );
-          },
-        }}
+        components={baseMarkdownComponents}
       >
         {content}
       </ReactMarkdown>

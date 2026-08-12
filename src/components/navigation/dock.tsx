@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -27,12 +27,13 @@ import {
   Copy,
   Check,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, sanitizeUrl } from "@/lib/utils";
 import { userConfig } from "@/config/user";
 import { useLanguage } from "@/context/language-context";
 import { type Locale } from "@/config/translations";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "@/lib/supabase";
+import type { SocialLink, ContactEmail } from "@/types";
 
 interface NavItem {
   href: string;
@@ -58,12 +59,14 @@ const PLATFORM_ICONS: Record<string, React.ComponentType<{ className?: string }>
   Other: Link2,
 };
 
+const emptySubscribe = () => () => {};
+
 const FALLBACK_SOCIAL: NavItem[] = [
-  { href: userConfig.links.linkedin, icon: Linkedin, label: "LinkedIn" },
-  { href: userConfig.links.github, icon: Github, label: "GitHub" },
-  { href: userConfig.links.instagram, icon: Instagram, label: "Instagram" },
-  { href: userConfig.links.resume, icon: FileText, label: "Resume (CV)" },
-];
+  { href: sanitizeUrl(userConfig.links.linkedin) || "", icon: Linkedin, label: "LinkedIn" },
+  { href: sanitizeUrl(userConfig.links.github) || "", icon: Github, label: "GitHub" },
+  { href: sanitizeUrl(userConfig.links.instagram) || "", icon: Instagram, label: "Instagram" },
+  { href: sanitizeUrl(userConfig.links.resume) || "", icon: FileText, label: "Resume (CV)" },
+].filter((item) => item.href !== "");
 
 interface LocaleInfo {
   code: Locale;
@@ -131,7 +134,7 @@ export function Dock() {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const { locale, setLocale, t } = useLanguage();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const [hoveredLabel, setHoveredLabel] = useState<string | null>(null);
   const [langModalOpen, setLangModalOpen] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
@@ -148,39 +151,54 @@ export function Dock() {
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    setMounted(true);
-    if (!supabase) return;
-    const fetchLinks = async () => {
+    let cancelled = false;
+    (async () => {
       if (!supabase) return;
-      const { data } = await supabase.from("social_links").select("*").order("order_index", { ascending: true });
+      const { data } = await supabase
+        .from("social_links")
+        .select("*")
+        .order("order_index", { ascending: true });
+      if (cancelled) return;
       if (data && data.length > 0) {
         setSocialItems(
-          data.map((link: any) => ({
-            href: link.url,
-            icon: PLATFORM_ICONS[link.platform] || Link2,
-            label: link.platform,
-          }))
+          (data as SocialLink[])
+            .map((link) => ({
+              href: sanitizeUrl(link.url) || "",
+              icon: PLATFORM_ICONS[link.platform] || Link2,
+              label: link.platform,
+            }))
+            .filter((item) => item.href !== ""),
         );
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-    fetchLinks();
   }, []);
 
   useEffect(() => {
-    if (!supabase) return;
-    const fetchEmails = async () => {
+    let cancelled = false;
+    (async () => {
       if (!supabase) return;
-      const { data } = await supabase.from("contact_emails").select("*").order("order_index", { ascending: true });
+      const { data } = await supabase
+        .from("contact_emails")
+        .select("*")
+        .order("order_index", { ascending: true });
+      if (cancelled) return;
       if (data) {
         setEmailItems(
-          data.map((item: any) => ({
-            label: item[`label_${locale}`] || item.label,
+          (data as ContactEmail[]).map((item) => ({
+            label: String(
+              item[`label_${locale}` as keyof ContactEmail] ?? item.label,
+            ),
             email: item.email,
-          }))
+          })),
         );
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-    fetchEmails();
   }, [locale]);
 
   const closeMenus = useCallback(() => {

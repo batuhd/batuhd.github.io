@@ -12,6 +12,7 @@ import { Dock } from "@/components/navigation/dock";
 import { Intro } from "@/components/home/intro";
 import { EasterEgg } from "@/components/easter-egg";
 import { HtmlLangUpdater } from "@/components/html-lang-updater";
+import { SkipLink } from "@/components/skip-link";
 import { siteConfig } from "@/config/site";
 import Image from "next/image";
 import Link from "next/link";
@@ -72,6 +73,9 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: siteConfig.url,
+    languages: {
+      "x-default": siteConfig.url,
+    },
     types: {
       "application/rss+xml": `${siteConfig.url}/feed.xml`,
     },
@@ -111,6 +115,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <LanguageProvider>
+              <SkipLink />
               <HtmlLangUpdater />
               <SiteDataProvider>
                 <MaintenanceGuard>
@@ -136,7 +141,7 @@ export default function RootLayout({
                       priority
                     />
                   </Link>
-                  <main className="relative mx-auto w-full px-4 sm:px-6 py-12 sm:py-16 pb-28 sm:pb-32">
+                  <main id="main-content" className="relative mx-auto w-full px-4 sm:px-6 py-12 sm:py-16 pb-28 sm:pb-32">
                     {children}
                   </main>
                   <EasterEgg />

@@ -4,11 +4,24 @@ import { userConfig } from "@/config/user";
 import { useLanguage } from "@/context/language-context";
 import { useSiteData } from "@/context/site-data-context";
 
+interface SkillsCategory {
+  id: string;
+  title: string;
+  skills: string[];
+  skills_en?: string[];
+  skills_tr?: string[];
+  skills_de?: string[];
+  skills_es?: string[];
+  title_tr?: string;
+  title_de?: string;
+  title_es?: string;
+}
+
 export function Skills() {
   const { t, getLocalized, locale } = useLanguage();
   const { skillCategories, loaded } = useSiteData();
 
-  const displayCategories =
+  const displayCategories: SkillsCategory[] =
     skillCategories.length > 0
       ? skillCategories
       : loaded
@@ -21,7 +34,7 @@ export function Skills() {
         : [];
 
   // Get localized skills based on current locale
-  const getLocalizedSkills = (category: any) => {
+  const getLocalizedSkills = (category: SkillsCategory): string[] => {
     if (skillCategories.length === 0) {
       return Array.isArray(category.skills) ? category.skills : [];
     }
@@ -42,7 +55,7 @@ export function Skills() {
         {t("home.skills")}
       </h2>
       <div className="grid gap-6 sm:grid-cols-3">
-        {displayCategories.map((category: any) => (
+        {displayCategories.map((category) => (
           <div key={category.id} className="space-y-3">
             <h3 className="text-sm font-medium text-muted-foreground">
               {skillCategories.length > 0
