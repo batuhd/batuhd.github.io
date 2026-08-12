@@ -134,6 +134,14 @@ Unlike typical starter templates, this project implements a rigorous, multi-laye
 - **Sign-up disabled** - no one can create accounts on your Supabase instance.
 - **PostgreSQL Triggers & Limits**: Database resource quotas prevent spam creation and URL validation constraints block cross-site exploits.
 
+### ♿ Accessibility-First UX
+
+The public site includes keyboard and screen-reader friendly enhancements:
+
+- **Skip-to-content link** — `SkipLink` component lets keyboard users jump straight to `#main-content` without tabbing through the dock
+- **Reduced-motion support** — animations respect `prefers-reduced-motion`, with a targeted CSS exception only where continuous motion is intentional
+- **Semantic landmarks** — main content is wrapped in a `<main>` region and nav uses proper ARIA attributes
+
 ### 🔔 Smart Toast Notification System
 
 Real-time visual feedback for all admin operations with a polished, non-intrusive notification system:
@@ -190,7 +198,7 @@ Additional security measures beyond the enterprise-grade foundation:
 
 | Layer               | Technology                                                           | Version |
 | ------------------- | -------------------------------------------------------------------- | ------- |
-| **Framework**       | [Next.js](https://nextjs.org/) (App Router)                          | 16.2.9  |
+| **Framework**       | [Next.js](https://nextjs.org/) (App Router)                          | 16.3.0  |
 | **UI Library**      | [React](https://react.dev/)                                          | 19.2.7  |
 | **Language**        | [TypeScript](https://www.typescriptlang.org/)                        | 5.x     |
 | **Styling**         | [Tailwind CSS](https://tailwindcss.com/) + `tailwind-merge` + `clsx` | 4.x / 3.x / 2.x |
@@ -244,17 +252,19 @@ Additional security measures beyond the enterprise-grade foundation:
     │   │   └── contact-form.tsx # Contact section
     │   ├── motion/
     │   │   └── fade-in.tsx      # Reusable staggered animation wrapper
-    │   ├── navigation/
-    │   │   └── dock.tsx         # Apple-style magnetic dock navigation
-    │   └── theme-provider.tsx   # Dark/light mode provider
+│   ├── navigation/
+│   │   └── dock.tsx         # Apple-style magnetic dock navigation
+│   ├── skip-link.tsx        # Keyboard skip-to-content link
+│   └── theme-provider.tsx   # Dark/light mode provider
     │
     ├── config/
     │   ├── locales/             # Static UI translations (EN, TR, DE, ES)
     │   └── translations.ts      # Typed i18n dictionary
     │
     ├── context/
-    │   ├── language-context.tsx # Global language provider with getLocalized()
-    │   └── site-data-context.tsx  # Supabase data cache (fetches all tables once)
+    │   ├── language-context.tsx    # Global language provider with getLocalized()
+    │   ├── site-data-context.tsx   # Supabase data cache (fetches all tables once)
+    │   └── admin-error-context.tsx # Captures RLS/auth errors and triggers 401 logout
     │
     ├── types/
     │   └── index.ts             # 🆕 Centralized TypeScript interfaces (Project, Blog, etc.)
@@ -529,7 +539,16 @@ Go to **Authentication → Settings → Auth Providers → Email** and enable **
 >
 > **🌐 CSP Note:** The `Content-Security-Policy` in `next.config.ts` automatically reads `NEXT_PUBLIC_SUPABASE_URL` from your environment variables. If you change Supabase projects, just update `.env.local` and restart the dev server — no manual CSP editing required.
 
-### 4. Launch
+### 4. Verify & Launch
+
+Run the automated checks before starting the dev server:
+
+```bash
+npm run lint
+npm run build
+```
+
+Then start the dev server:
 
 ```bash
 npm run dev

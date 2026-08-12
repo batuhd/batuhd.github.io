@@ -6,7 +6,7 @@ This file defines how AI agents should behave in this repository.
 
 ## 🎯 Project Goal
 
-This project is a full-stack, multilingual portfolio website and headless CMS built with Next.js 16, React 19, TypeScript, Tailwind CSS v4, Supabase, and Motion (formerly Framer Motion).
+This project is a full-stack, multilingual portfolio website and headless CMS built with Next.js 16.3, React 19.2, TypeScript, Tailwind CSS v4, Supabase, and Motion (formerly Framer Motion).
 
 The AI agent should help with:
 
@@ -33,7 +33,7 @@ The AI agent should help with:
 
 | Layer | Technology | Version |
 | ----- | ---------- | ------- |
-| Framework | [Next.js](https://nextjs.org/) (App Router) | 16.2.9 |
+| Framework | [Next.js](https://nextjs.org/) (App Router) | 16.3.0 |
 | UI Library | [React](https://react.dev/) | 19.2.7 |
 | Language | [TypeScript](https://www.typescriptlang.org/) | 5.x |
 | Styling | [Tailwind CSS](https://tailwindcss.com/) | 4.x |
@@ -69,14 +69,16 @@ The AI agent should help with:
 │   │   ├── home/                # Public homepage sections
 │   │   ├── motion/              # Reusable animation wrappers
 │   │   ├── navigation/          # Dock navigation
+│   │   ├── skip-link.tsx        # Keyboard skip-to-content link
 │   │   └── theme-provider.tsx   # next-themes wrapper
 │   ├── config/
 │   │   ├── locales/             # Static UI translations
 │   │   ├── translations.ts      # Typed i18n dictionary
 │   │   └── user.ts              # Hardcoded user fallbacks
 │   ├── context/
-│   │   ├── language-context.tsx # Global language provider
-│   │   └── site-data-context.tsx # Supabase data cache
+│   │   ├── language-context.tsx    # Global language provider
+│   │   ├── site-data-context.tsx   # Supabase data cache
+│   │   └── admin-error-context.tsx # RLS/auth error handling + 401 logout
 │   ├── lib/
 │   │   ├── supabase.ts          # Supabase client singletons
 │   │   ├── data.ts              # Server data fetching helpers
@@ -102,6 +104,7 @@ The AI agent should help with:
   - Utilities/Hooks: camelCase
   - Types/Interfaces: PascalCase in `src/types/index.ts`
 - All user-generated URLs **must** be sanitized before rendering.
+- Prefer `useSyncExternalStore` over `useState`/`useEffect` pairs for client-only mount guards; it avoids hydration mismatches and extra renders.
 - Avoid unnecessary complexity; prefer minimal, safe changes.
 
 ---
@@ -125,7 +128,7 @@ When given a task:
 3. **Plan changes before writing code.**
 4. **Apply minimal, safe changes.**
 5. **Explain what was changed** when done.
-6. **Validate mentally** before marking complete. Run `npm run lint` or `npm run build` when appropriate.
+6. **Validate mentally** before marking complete. Run `npm run lint` and `npm run build` for verification before concluding.
 
 ---
 
