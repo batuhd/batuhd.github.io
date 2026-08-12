@@ -107,6 +107,7 @@ export interface Blog {
   date: string;
   read_time: string;
   image_url?: string;
+  is_published: boolean;
   order_index: number;
   // Translations
   title_tr?: string;
@@ -126,6 +127,17 @@ export interface Blog {
   linked_language_id?: string;
   linked_activity_id?: string;
   linked_certification_id?: string;
+  // Additional data
+  additional_images?: string;
+  created_at: string;
+}
+
+export interface BlogImage {
+  id: string;
+  blog_id: string;
+  image_url: string;
+  caption?: string;
+  order_index: number;
   created_at: string;
 }
 
@@ -216,6 +228,7 @@ export interface Activity {
   role: string;
   start_date: string;
   end_date: string;
+  is_current: boolean;
   logo_url: string;
   description: string;
   link_url: string;
@@ -246,13 +259,25 @@ export interface Certification {
   name_tr?: string;
   name_de?: string;
   name_es?: string;
+  issuer_tr?: string;
+  issuer_de?: string;
+  issuer_es?: string;
   created_at: string;
+}
+
+export interface CertificationSkill {
+  certification_id: string;
+  skill_category_id: string;
 }
 
 export interface SkillCategory {
   id: string;
   title: string;
   skills: string[];
+  skills_en?: string[];
+  skills_tr?: string[];
+  skills_de?: string[];
+  skills_es?: string[];
   order_index: number;
   // Translations
   title_tr?: string;
@@ -300,9 +325,9 @@ export interface SectionOrder {
 
 export interface LinkedEntity {
   id: string;
-  title?: string;
-  name?: string;
-  type: 'project' | 'experience' | 'education' | 'certification';
+  title: string;
+  type: string;
+  originalObj?: Record<string, string | undefined>;
 }
 
 // ============================================
@@ -368,4 +393,14 @@ export interface EasterEgg {
   is_active: boolean;
   order_index: number;
   created_at: string;
+}
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: HTMLElement, options: Record<string, unknown>) => string;
+      reset: (widgetId: string) => void;
+      remove: (widgetId: string) => void;
+    };
+  }
 }

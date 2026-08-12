@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { cache } from "react";
+import type { LinkedEntity } from "@/types";
 
 // Server-side Supabase client (for Server Components)
 const createServerClient = () => {
@@ -65,10 +66,10 @@ export interface SkillCategory {
   id: string;
   title: string;
   subtitle?: string;
-  skills: any[];
-  skills_tr?: any[];
-  skills_de?: any[];
-  skills_es?: any[];
+  skills: string[];
+  skills_tr?: string[];
+  skills_de?: string[];
+  skills_es?: string[];
   order_index: number;
   title_tr?: string;
   title_de?: string;
@@ -288,11 +289,6 @@ export interface ContactEmail {
   order_index: number;
 }
 
-export interface SectionOrder {
-  section_id: string;
-  order_index: number;
-}
-
 export interface EasterEgg {
   id: string;
   image_url: string;
@@ -409,13 +405,18 @@ export const fetchAllData = cache(async (): Promise<SiteData> => {
     certifications: certRes.data || [],
     certificationSkills: certSkillsRes.data || [],
     sectionOrder: sectionRes.data || [],
-    projects: projectsRes.data || [],
-    blogs: blogsRes.data || [],
+    projects: (projectsRes.data || []) as unknown as Project[],
+    blogs: (blogsRes.data || []) as unknown as Blog[],
     socialLinks: socialLinksRes.data || [],
     contactEmails: contactEmailsRes.data || [],
     easterEggs: (easterEggsRes.data || []) as EasterEgg[],
   };
 });
+
+// Type helper for partial Supabase selections
+// Supabase select("*") returns full rows, but partial selects need explicit casts
+// to match our TypeScript interfaces. We use `as unknown as T` only at the
+// boundary where we trust the database schema.
 
 // Optimized Home Page Data - Sadece gerekli alanlar
 export const fetchHomeData = cache(async () => {
@@ -501,8 +502,8 @@ export const fetchHomeData = cache(async () => {
     sectionOrder: sectionRes.data || [],
     socialLinks: socialLinksRes.data || [],
     contactEmails: contactEmailsRes.data || [],
-    projects: projectsRes.data || [],
-    blogs: blogsRes.data || [],
+    projects: (projectsRes.data || []) as unknown as Project[],
+    blogs: (blogsRes.data || []) as unknown as Blog[],
   };
 });
 
@@ -559,72 +560,70 @@ export const fetchBlogData = cache(async () => {
     imagesMap[img.blog_id].push(img);
   });
 
-  // Entity map for fast lookup
-  const entityMap: Record<
-    string,
-    { id: string; title: string; type: string; originalObj: any }
-  > = {};
-  (projectsRes.data || []).forEach((p: any) => {
+  const entityMap: Record<string, LinkedEntity> = {};
+  ((projectsRes.data || []) as unknown as Project[]).forEach((p) => {
     entityMap[p.id] = {
       id: p.id,
       title: p.title,
       type: "project",
-      originalObj: p,
+      originalObj: p as unknown as Record<string, string | undefined>,
     };
   });
-  (expRes.data || []).forEach((e: any) => {
+  ((expRes.data || []) as unknown as Experience[]).forEach((e) => {
     entityMap[e.id] = {
       id: e.id,
       title: `${e.title} at ${e.company}`,
       type: "experience",
-      originalObj: e,
+      originalObj: e as unknown as Record<string, string | undefined>,
     };
   });
-  (eduRes.data || []).forEach((e: any) => {
+  ((eduRes.data || []) as unknown as Education[]).forEach((e) => {
     entityMap[e.id] = {
       id: e.id,
       title: e.university,
       type: "education",
-      originalObj: e,
+      originalObj: e as unknown as Record<string, string | undefined>,
     };
   });
-  (skillsRes.data || []).forEach((s: any) => {
+  ((skillsRes.data || []) as unknown as SkillCategory[]).forEach((s) => {
     entityMap[s.id] = {
       id: s.id,
       title: s.title,
       type: "skill",
-      originalObj: s,
+      originalObj: s as unknown as Record<string, string | undefined>,
     };
   });
-  (langsRes.data || []).forEach((l: any) => {
+  ((langsRes.data || []) as unknown as Language[]).forEach((l) => {
     entityMap[l.id] = {
       id: l.id,
       title: l.name,
       type: "language",
-      originalObj: l,
+      originalObj: l as unknown as Record<string, string | undefined>,
     };
   });
-  (actsRes.data || []).forEach((a: any) => {
+  ((actsRes.data || []) as unknown as Activity[]).forEach((a) => {
     entityMap[a.id] = {
       id: a.id,
       title: a.organization,
       type: "activity",
-      originalObj: a,
+      originalObj: a as unknown as Record<string, string | undefined>,
     };
   });
-  (certsRes.data || []).forEach((c: any) => {
+  ((certsRes.data || []) as unknown as Certification[]).forEach((c) => {
     entityMap[c.id] = {
       id: c.id,
       title: c.name,
       type: "certification",
-      originalObj: c,
+      originalObj: c as unknown as Record<string, string | undefined>,
     };
   });
 
-  const blogs: BlogWithImages[] = (blogsRes.data || []).map((blog: Blog) => ({
-    ...blog,
-    images: imagesMap[blog.id] || [],
-  }));
+  const blogs: BlogWithImages[] = ((blogsRes.data || []) as unknown as Blog[]).map(
+    (blog) => ({
+      ...blog,
+      images: imagesMap[blog.id] || [],
+    }),
+  );
 
   return { blogs, entityMap };
 });
@@ -683,82 +682,84 @@ export const fetchWorksData = cache(async () => {
     imagesMap[img.project_id].push(img);
   });
 
-  // Entity map
-  const entityMap: Record<
-    string,
-    { id: string; title: string; type: string; originalObj: any }
-  > = {};
-  (expRes.data || []).forEach((e: any) => {
+  const entityMap: Record<string, LinkedEntity> = {};
+  ((expRes.data || []) as unknown as Experience[]).forEach((e) => {
     entityMap[e.id] = {
       id: e.id,
       title: `${e.title} at ${e.company}`,
       type: "experience",
-      originalObj: e,
+      originalObj: e as unknown as Record<string, string | undefined>,
     };
   });
-  (eduRes.data || []).forEach((e: any) => {
+  ((eduRes.data || []) as unknown as Education[]).forEach((e) => {
     entityMap[e.id] = {
       id: e.id,
       title: e.university,
       type: "education",
-      originalObj: e,
+      originalObj: e as unknown as Record<string, string | undefined>,
     };
   });
-  (skillsRes.data || []).forEach((s: any) => {
+  ((skillsRes.data || []) as unknown as SkillCategory[]).forEach((s) => {
     entityMap[s.id] = {
       id: s.id,
       title: s.title,
       type: "skill",
-      originalObj: s,
+      originalObj: s as unknown as Record<string, string | undefined>,
     };
   });
-  (langsRes.data || []).forEach((l: any) => {
+  ((langsRes.data || []) as unknown as Language[]).forEach((l) => {
     entityMap[l.id] = {
       id: l.id,
       title: l.name,
       type: "language",
-      originalObj: l,
+      originalObj: l as unknown as Record<string, string | undefined>,
     };
   });
-  (actsRes.data || []).forEach((a: any) => {
+  ((actsRes.data || []) as unknown as Activity[]).forEach((a) => {
     entityMap[a.id] = {
       id: a.id,
       title: a.organization,
       type: "activity",
-      originalObj: a,
+      originalObj: a as unknown as Record<string, string | undefined>,
     };
   });
-  (certsRes.data || []).forEach((c: any) => {
+  ((certsRes.data || []) as unknown as Certification[]).forEach((c) => {
     entityMap[c.id] = {
       id: c.id,
       title: c.name,
       type: "certification",
-      originalObj: c,
+      originalObj: c as unknown as Record<string, string | undefined>,
     };
   });
 
-  const projects: ProjectWithImages[] = (projectsRes.data || []).map(
-    (project: Project) => ({
+  const projects: ProjectWithImages[] = ((projectsRes.data || []) as unknown as Project[]).map(
+    (project) => ({
       ...project,
       images: imagesMap[project.id] || [],
     }),
   );
 
-  const relatedBlogs = blogsRes.data || [];
+  const relatedBlogs = (blogsRes.data || []) as unknown as Blog[];
 
   return { projects, entityMap, relatedBlogs };
 });
 
 // Helper: Localized field getter
-export function getLocalized<T extends Record<string, any>>(
-  obj: T | null | undefined,
+export function getLocalized(
+  obj: unknown,
   field: string,
   lang: string = "en",
   fallback?: string,
 ): string {
-  if (!obj) return fallback || "";
+  if (!obj || typeof obj !== "object") return fallback || "";
 
+  const record = obj as Record<string, unknown>;
   const langField = `${field}_${lang}`;
-  const value = obj[langField] || obj[field];
-  return value || fallback || "";
+  const localizedValue = record[langField];
+  const value = localizedValue !== undefined && localizedValue !== null
+    ? localizedValue
+    : record[field];
+
+  if (value === undefined || value === null) return fallback || "";
+  return String(value) || fallback || "";
 }
