@@ -57,6 +57,12 @@ export const tr: Record<string, string> = {
   "home.contact.sending": "Gönderiliyor...",
   "home.contact.sent": "Gönderildi!",
   "home.contact.error": "Mesaj gönderilemedi. Lütfen tekrar deneyin.",
+  "home.contact.errorNameTooShort": "İsim en az 2 karakter olmalıdır.",
+  "home.contact.errorNameTooLong": "İsim en fazla 100 karakter olabilir.",
+  "home.contact.errorEmailInvalid": "Geçerli bir e-posta adresi girin.",
+  "home.contact.errorEmailTooLong": "E-posta adresi çok uzun.",
+  "home.contact.errorMessageTooShort": "Mesaj en az 10 karakter olmalıdır.",
+  "home.contact.errorMessageTooLong": "Mesaj en fazla 5000 karakter olabilir.",
   "home.contact.namePlaceholder": "Adınız",
   "home.contact.emailPlaceholder": "siz@ornek.com",
   "home.contact.messagePlaceholder": "Mesajınız...",
@@ -148,4 +154,7 @@ export const tr: Record<string, string> = {
 
   // GitHub
   "github.contributionsOn": "{date} tarihinde {count} katkı",
+
+  // Accessibility
+  "a11y.skipToContent": "Ana içeriğe atla",
 };

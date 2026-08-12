@@ -54,6 +54,12 @@ export const es: Record<string, string> = {
   "home.contact.sent": "¡Enviado!",
   "home.contact.error":
     "Error al enviar el mensaje. Por favor, inténtalo de nuevo.",
+  "home.contact.errorNameTooShort": "El nombre debe tener al menos 2 caracteres.",
+  "home.contact.errorNameTooLong": "El nombre debe tener como máximo 100 caracteres.",
+  "home.contact.errorEmailInvalid": "Por favor, introduce una dirección de correo electrónico válida.",
+  "home.contact.errorEmailTooLong": "La dirección de correo electrónico es demasiado larga.",
+  "home.contact.errorMessageTooShort": "El mensaje debe tener al menos 10 caracteres.",
+  "home.contact.errorMessageTooLong": "El mensaje debe tener como máximo 5000 caracteres.",
   "home.contact.namePlaceholder": "Tu nombre",
   "home.contact.emailPlaceholder": "tu@ejemplo.com",
   "home.contact.messagePlaceholder": "Tu mensaje...",
@@ -147,4 +153,7 @@ export const es: Record<string, string> = {
 
   // GitHub
   "github.contributionsOn": "{count} contribuciones el {date}",
+
+  // Accessibility
+  "a11y.skipToContent": "Saltar al contenido principal",
 };
