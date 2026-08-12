@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, User, Image as ImageIcon, BarChart3, Quote } from "lucide-react";
+import { Loader2, User, BarChart3, Quote } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import type { AboutMe } from "@/types";
 import { useAdminError } from "@/context/admin-error-context";
 import { toast } from "sonner";
 import { ImageInputWithRecent } from "./admin-tabs";
@@ -148,39 +149,48 @@ function Field({ label, children, hint }: FieldProps) {
 
 export function AboutMeForm() {
   const { handleOperationError } = useAdminError();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<AboutMe | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<AboutMeFormData>(DEFAULT_FORM);
 
-  const fetchData = async () => {
+  const loadAboutMe = async () => {
     if (!supabase) return;
+    setLoading(true);
     const { data: rows } = await supabase
       .from("about_me")
       .select("*")
       .limit(1);
     if (rows && rows.length > 0) {
-      const row = rows[0];
+      const row = rows[0] as AboutMe;
       setData(row);
-      const f = { ...DEFAULT_FORM } as Record<string, any>;
+      const f = { ...DEFAULT_FORM } as Record<string, string | boolean>;
       Object.keys(DEFAULT_FORM).forEach((k) => {
         if (
           k === "show_quote" ||
           k === "show_stats" ||
           k === "show_profile_photo"
         ) {
-          f[k] = row[k] !== false;
+          f[k] = row[k as keyof AboutMe] !== false;
         } else {
-          f[k] = row[k]?.toString() || "";
+          const value = row[k as keyof AboutMe];
+          f[k] = value?.toString() || "";
         }
       });
-      setForm(f as AboutMeFormData);
+      setForm(f as unknown as AboutMeFormData);
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchData();
+    let cancelled = false;
+    (async () => {
+      await loadAboutMe();
+      if (cancelled) return;
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const updateField = <K extends keyof AboutMeFormData>(
@@ -195,7 +205,7 @@ export function AboutMeForm() {
     if (!supabase) return;
     setSaving(true);
 
-    const payload: Record<string, any> = {};
+    const payload: Record<string, string | number | boolean | null> = {};
     const numFields = [
       "started_coding_year",
       "projects_count",
@@ -243,7 +253,7 @@ export function AboutMeForm() {
       }
     }
 
-    await fetchData();
+    await loadAboutMe();
     setSaving(false);
     toast.success("Profil bilgileri başarıyla kaydedildi");
   };

@@ -13,37 +13,27 @@ import { AdminCard } from "./ui/admin-card";
 import { AdminButton } from "./ui/admin-button";
 import { AdminBadge } from "./ui/admin-badge";
 import { AdminEmptyState } from "./ui/admin-empty-state";
-import { cn } from "@/lib/utils";
+import { cn, sanitizeUrl } from "@/lib/utils";
 import type { AdminTab } from "./admin-layout";
+import type { Project, Blog, SkillCategory } from "@/types";
 
-interface WorkItem {
-  id: string;
-  title?: string;
-  description?: string;
-  image?: string;
-  title_tr?: string;
-  title_de?: string;
-  title_es?: string;
-}
+export type WorkItem = Pick<
+  Project,
+  "id" | "title" | "description" | "image" | "title_tr" | "title_de" | "title_es"
+>;
 
-interface BlogItem {
-  id: string;
-  title?: string;
-  excerpt?: string;
-  image_url?: string;
-  is_published?: boolean;
-}
+export type BlogItem = Pick<
+  Blog,
+  "id" | "title" | "excerpt" | "image_url" | "is_published"
+>;
 
-interface SkillCategoryItem {
-  id: string;
-  title?: string;
-}
+export type SkillCategoryItem = Pick<SkillCategory, "id" | "title">;
 
 interface AdminDashboardProps {
   userEmail?: string | null;
-  works: unknown[];
-  blogs: unknown[];
-  skillCategories: unknown[];
+  works: WorkItem[];
+  blogs: BlogItem[];
+  skillCategories: SkillCategoryItem[];
   onTabChange: (tab: AdminTab) => void;
   onAddWork: () => void;
   onAddBlog: () => void;
@@ -81,14 +71,10 @@ export function AdminDashboard({
   onAddWork,
   onAddBlog,
 }: AdminDashboardProps) {
-  const typedWorks = works as WorkItem[];
-  const typedBlogs = blogs as BlogItem[];
-  const typedSkillCategories = skillCategories as SkillCategoryItem[];
+  const publishedBlogs = blogs.filter((b) => b.is_published).length;
 
-  const publishedBlogs = typedBlogs.filter((b) => b.is_published).length;
-
-  const recentWorks = [...typedWorks].reverse().slice(0, 4);
-  const recentBlogs = [...typedBlogs].reverse().slice(0, 4);
+  const recentWorks = [...works].reverse().slice(0, 4);
+  const recentBlogs = [...blogs].reverse().slice(0, 4);
 
   return (
     <div className="space-y-6">
@@ -129,13 +115,13 @@ export function AdminDashboard({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Works"
-          value={typedWorks.length}
+          value={works.length}
           icon={FolderKanban}
           colorClass="bg-primary/10 text-primary"
         />
         <StatCard
           title="Blog Posts"
-          value={typedBlogs.length}
+          value={blogs.length}
           icon={PenTool}
           colorClass="bg-blue-500/10 text-blue-600"
         />
@@ -147,7 +133,7 @@ export function AdminDashboard({
         />
         <StatCard
           title="Skill Categories"
-          value={typedSkillCategories.length}
+          value={skillCategories.length}
           icon={Award}
           colorClass="bg-amber-500/10 text-amber-600"
         />
@@ -218,7 +204,7 @@ export function AdminDashboard({
                   {work.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={work.image}
+                      src={sanitizeUrl(work.image) || ""}
                       alt=""
                       className="h-10 w-10 rounded-md object-cover"
                     />
@@ -279,7 +265,7 @@ export function AdminDashboard({
                   {blog.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={blog.image_url}
+                      src={sanitizeUrl(blog.image_url) || ""}
                       alt=""
                       className="h-10 w-10 rounded-md object-cover"
                     />

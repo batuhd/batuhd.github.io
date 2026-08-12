@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { ShieldX } from "lucide-react";
 import { toast } from "sonner";
+import Image from "next/image";
 
 interface AdminErrorContextType {
   /** Call this after any Supabase operation to check for errors. If unauthorized, shows the 401 screen. */
-  handleOperationError: (error: any, operationName: string) => boolean;
+  handleOperationError: (error: unknown, operationName: string) => boolean;
 }
 
 const AdminErrorContext = createContext<AdminErrorContextType | null>(null);
@@ -35,11 +36,12 @@ export function AdminErrorProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const handleOperationError = useCallback((error: any, operationName: string): boolean => {
+  const handleOperationError = useCallback((error: unknown, operationName: string): boolean => {
     if (!error) return false;
 
-    const code = error.code || error.status || "UNKNOWN";
-    const message = error.message || error.details || "An unknown error occurred.";
+    const err = error as Record<string, unknown>;
+    const code = String(err.code ?? err.status ?? "UNKNOWN");
+    const message = String(err.message ?? err.details ?? "An unknown error occurred.");
 
     // RLS violation, permission denied, or auth errors
     const isUnauthorized =
@@ -102,9 +104,12 @@ export function AdminErrorProvider({ children }: { children: ReactNode }) {
           <div className="flex flex-col items-center gap-6 max-w-lg w-full mx-4 p-8 rounded-2xl border bg-card shadow-2xl text-center animate-in fade-in zoom-in-95 duration-300">
             {/* HTTP Cat 401 Image */}
             <div className="w-full max-w-sm rounded-xl overflow-hidden border shadow-lg">
-              <img
+              <Image
                 src="/media/401.jpg"
                 alt="401 Unauthorized"
+                width={0}
+                height={0}
+                sizes="100vw"
                 className="w-full h-auto"
               />
             </div>

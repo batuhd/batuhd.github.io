@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { SimpleMarkdownRenderer } from "@/components/markdown/markdown-renderer";
 import {
@@ -29,9 +29,6 @@ import {
   Columns,
   AlignLeft,
 } from "lucide-react";
-
-const inputClass =
-  "w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary";
 
 interface MarkdownEditorProps {
   value: string;
@@ -161,104 +158,118 @@ export function MarkdownEditor({
     };
   }, [isFullscreen]);
 
-  const insertText = useCallback(
-    (before: string, after: string = "", placeholderText: string = "") => {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
+  const insertText = (
+    textarea: HTMLTextAreaElement,
+    before: string,
+    after: string = "",
+    placeholderText: string = "",
+  ) => {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = value;
+    const selectedText = text.substring(start, end);
+    const textToInsert = selectedText || placeholderText;
 
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const text = value;
-      const selectedText = text.substring(start, end);
-      const textToInsert = selectedText || placeholderText;
+    const newValue =
+      text.substring(0, start) +
+      before +
+      textToInsert +
+      after +
+      text.substring(end);
 
-      const newValue =
-        text.substring(0, start) +
-        before +
-        textToInsert +
-        after +
-        text.substring(end);
+    onChange(newValue);
 
-      onChange(newValue);
+    // Restore focus and set cursor position
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = start + before.length + textToInsert.length;
+      if (selectedText) {
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+      } else {
+        // Select the placeholder text
+        textarea.setSelectionRange(
+          start + before.length,
+          start + before.length + textToInsert.length,
+        );
+      }
+    }, 0);
+  };
 
-      // Restore focus and set cursor position
-      setTimeout(() => {
-        textarea.focus();
-        const newCursorPos = start + before.length + textToInsert.length;
-        if (selectedText) {
-          textarea.setSelectionRange(newCursorPos, newCursorPos);
-        } else {
-          // Select the placeholder text
-          textarea.setSelectionRange(
-            start + before.length,
-            start + before.length + textToInsert.length,
-          );
-        }
-      }, 0);
-    },
-    [value, onChange],
-  );
 
-  const toolbarItems: Array<
+const toolbarItems: Array<
     | { type: "divider" }
-    | { icon: React.ElementType; label: string; action: () => void }
+    | {
+        icon: React.ElementType;
+        label: string;
+        action: (textarea: HTMLTextAreaElement) => void;
+      }
   > = [
     {
       icon: Bold,
       label: "Kalın",
-      action: () => insertText("**", "**", "kalın metin"),
+      action: (textarea) => insertText(textarea, "**", "**", "kalın metin"),
     },
     {
       icon: Italic,
       label: "İtalik",
-      action: () => insertText("*", "*", "italik metin"),
+      action: (textarea) => insertText(textarea, "*", "*", "italik metin"),
     },
     { type: "divider" },
     {
       icon: Heading1,
       label: "Başlık 1",
-      action: () => insertText("# ", "", "Başlık"),
+      action: (textarea) => insertText(textarea, "# ", "", "Başlık"),
     },
     {
       icon: Heading2,
       label: "Başlık 2",
-      action: () => insertText("## ", "", "Başlık"),
+      action: (textarea) => insertText(textarea, "## ", "", "Başlık"),
     },
     {
       icon: Heading3,
       label: "Başlık 3",
-      action: () => insertText("### ", "", "Başlık"),
+      action: (textarea) => insertText(textarea, "### ", "", "Başlık"),
     },
     { type: "divider" },
-    { icon: List, label: "Liste", action: () => insertText("- ", "", "Madde") },
+    {
+      icon: List,
+      label: "Liste",
+      action: (textarea) => insertText(textarea, "- ", "", "Madde"),
+    },
     {
       icon: ListOrdered,
       label: "Numaralı Liste",
-      action: () => insertText("1. ", "", "Birinci"),
+      action: (textarea) => insertText(textarea, "1. ", "", "Birinci"),
     },
     { type: "divider" },
     {
       icon: Link,
       label: "Link",
-      action: () => insertText("[", "](https://)", "link"),
+      action: (textarea) => insertText(textarea, "[", "](https://)", "link"),
     },
     {
       icon: Image,
       label: "Resim",
-      action: () => insertText("![", "](/image.png)", "açıklama"),
+      action: (textarea) =>
+        insertText(textarea, "![", "](/image.png)", "açıklama"),
     },
     { type: "divider" },
-    { icon: Code, label: "Kod", action: () => insertText("`", "`", "kod") },
+    {
+      icon: Code,
+      label: "Kod",
+      action: (textarea) => insertText(textarea, "`", "`", "kod"),
+    },
     {
       icon: Quote,
       label: "Alıntı",
-      action: () => insertText("> ", "", "Alıntı"),
+      action: (textarea) => insertText(textarea, "> ", "", "Alıntı"),
     },
     {
       icon: Table,
       label: "Tablo",
-      action: () =>
+      action: (textarea) =>
         insertText(
+          textarea,
           "| Başlık 1 | Başlık 2 |\n|----------|----------|\n| Hücre 1  | Hücre 2  |",
           "",
           "",
@@ -267,14 +278,11 @@ export function MarkdownEditor({
     {
       icon: Minus,
       label: "Çizgi",
-      action: () => insertText("\n---\n", "", ""),
+      action: (textarea) => insertText(textarea, "\n---\n", "", ""),
     },
   ];
 
-  const insertEmoji = (emoji: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
+  const insertEmoji = (textarea: HTMLTextAreaElement, emoji: string) => {
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const text = value;
@@ -321,7 +329,10 @@ export function MarkdownEditor({
             <button
               key={idx}
               type="button"
-              onClick={item.action}
+              onClick={() => {
+                const textarea = textareaRef.current;
+                if (textarea) item.action(textarea);
+              }}
               className="markdown-toolbar-button"
               title={item.label}
             >
@@ -352,7 +363,10 @@ export function MarkdownEditor({
                 <button
                   key={code}
                   type="button"
-                  onClick={() => insertEmoji(emoji)}
+                  onClick={() => {
+                    const textarea = textareaRef.current;
+                    if (textarea) insertEmoji(textarea, emoji);
+                  }}
                   className="p-2 hover:bg-muted rounded transition-colors text-lg"
                   title={code}
                 >

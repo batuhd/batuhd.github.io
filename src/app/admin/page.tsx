@@ -16,6 +16,18 @@ import {
   useAdminError,
 } from "@/context/admin-error-context";
 import type { User } from "@supabase/supabase-js";
+import type {
+  Project,
+  ProjectImage,
+  Blog,
+  BlogImage,
+  Experience,
+  Education,
+  SkillCategory,
+  Language,
+  Activity,
+  Certification,
+} from "@/types";
 import {
   AdminAboutTab,
   AdminCrudTab,
@@ -28,89 +40,22 @@ import { AdminEasterEggConfigTab } from "@/components/admin/easter-egg-config-ta
 import { WorkForm } from "@/components/admin/work-form";
 import { BlogForm } from "@/components/admin/blog-form";
 import { AdminLayout, type AdminTab } from "@/components/admin/admin-layout";
-import { AdminDashboard } from "@/components/admin/admin-dashboard";
+import {
+  AdminDashboard,
+  type WorkItem,
+  type BlogItem,
+  type SkillCategoryItem,
+} from "@/components/admin/admin-dashboard";
 import {
   AdminListView,
   AdminListContainer,
   AdminListItem,
   type AdminListItemBadge,
   AdminConfirmDialog,
-  AdminFormStepper,
-  type FormStep,
 } from "@/components/admin/ui";
 import { Toaster, toast } from "sonner";
 
 type Tab = AdminTab | "dashboard";
-
-// Type definitions for better type safety
-interface Project {
-  id: string;
-  title: string;
-  description?: string;
-  link?: string;
-  github?: string;
-  image?: string;
-  tags?: string[];
-  title_tr?: string;
-  description_tr?: string;
-  title_de?: string;
-  description_de?: string;
-  title_es?: string;
-  description_es?: string;
-  order_index?: number;
-  linked_experience_id?: string;
-  linked_education_id?: string;
-  linked_skill_category_ids?: string[];
-  linked_language_id?: string;
-  linked_activity_id?: string;
-  linked_certification_id?: string;
-  additional_images?: string;
-}
-
-interface ProjectImage {
-  id: string;
-  project_id: string;
-  image_url: string;
-  caption?: string;
-  order_index?: number;
-}
-
-interface Blog {
-  id: string;
-  title: string;
-  excerpt?: string;
-  content?: string;
-  date?: string;
-  read_time?: string;
-  image_url?: string;
-  is_published?: boolean;
-  title_tr?: string;
-  excerpt_tr?: string;
-  content_tr?: string;
-  title_de?: string;
-  excerpt_de?: string;
-  content_de?: string;
-  title_es?: string;
-  excerpt_es?: string;
-  content_es?: string;
-  order_index?: number;
-  linked_project_id?: string;
-  linked_experience_id?: string;
-  linked_education_id?: string;
-  linked_skill_category_ids?: string[];
-  linked_language_id?: string;
-  linked_activity_id?: string;
-  linked_certification_id?: string;
-  additional_images?: string;
-}
-
-interface BlogImage {
-  id: string;
-  blog_id: string;
-  image_url: string;
-  caption?: string;
-  order_index?: number;
-}
 
 // Field whitelists to prevent mass assignment
 const PROJECT_FIELDS = [
@@ -208,14 +153,14 @@ function AdminDashboardContent() {
     id: string;
   } | null>(null);
 
-  const [works, setWorks] = useState<any[]>([]);
-  const [blogs, setBlogs] = useState<any[]>([]);
-  const [experiences, setExperiences] = useState<any[]>([]);
-  const [educations, setEducations] = useState<any[]>([]);
-  const [skillCategories, setSkillCategories] = useState<any[]>([]);
-  const [languages, setLanguages] = useState<any[]>([]);
-  const [activities, setActivities] = useState<any[]>([]);
-  const [certifications, setCertifications] = useState<any[]>([]);
+  const [works, setWorks] = useState<Project[]>([]);
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [experiences, setExperiences] = useState<Experience[]>([]);
+  const [educations, setEducations] = useState<Education[]>([]);
+  const [skillCategories, setSkillCategories] = useState<SkillCategory[]>([]);
+  const [languages, setLanguages] = useState<Language[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [certifications, setCertifications] = useState<Certification[]>([]);
 
   const [isAddingWork, setIsAddingWork] = useState(false);
   const [workForm, setWorkForm] = useState({
@@ -264,8 +209,6 @@ function AdminDashboardContent() {
   });
 
   const [isAddingBlog, setIsAddingBlog] = useState(false);
-  const [blogStep, setBlogStep] = useState("basic");
-  const [editBlogStep, setEditBlogStep] = useState("basic");
   const [blogForm, setBlogForm] = useState({
     title: "",
     excerpt: "",
@@ -382,12 +325,12 @@ function AdminDashboardContent() {
           .from("blog_images")
           .select("*")
           .order("order_index", { ascending: true }),
-        sb.from("experiences").select("id, title, company"),
-        sb.from("educations").select("id, university, degree"),
-        sb.from("skill_categories").select("id, title"),
-        sb.from("languages").select("id, name"),
-        sb.from("activities").select("id, organization"),
-        sb.from("certifications").select("id, name"),
+        sb.from("experiences").select("*"),
+        sb.from("educations").select("*"),
+        sb.from("skill_categories").select("*"),
+        sb.from("languages").select("*"),
+        sb.from("activities").select("*"),
+        sb.from("certifications").select("*"),
       ]);
 
       if (worksRes.data) {
@@ -998,9 +941,9 @@ function AdminDashboardContent() {
       {activeTab === "dashboard" && (
         <AdminDashboard
           userEmail={user?.email}
-          works={works}
-          blogs={blogs}
-          skillCategories={skillCategories}
+          works={works as WorkItem[]}
+          blogs={blogs as BlogItem[]}
+          skillCategories={skillCategories as SkillCategoryItem[]}
           onTabChange={(tab) => setActiveTab(tab as Tab)}
           onAddWork={() => {
             setActiveTab("works");
@@ -1084,30 +1027,33 @@ function AdminDashboardContent() {
                         description: "Add your first project to showcase it.",
                         icon: <FolderKanban className="h-8 w-8 opacity-50" />,
                       }}
-                      renderItem={(work: any, idx: number) => (
-                        <AdminListItem
-                          key={work.id}
-                          index={idx}
-                          title={work.title}
-                          subtitle={work.description}
-                          image={work.image}
-                          fallbackIcon={<FolderKanban className="h-4 w-4" />}
-                          isFirst={idx === 0}
-                          isLast={idx === works.length - 1}
-                          isEditing={editingWorkId === work.id}
-                          onMoveUp={() => handleMoveWork(work.id, "up")}
-                          onMoveDown={() => handleMoveWork(work.id, "down")}
-                          onEdit={() => handleEditWork(work)}
-                          onDelete={() =>
-                            setDeleteConfirm({ type: "work", id: work.id })
-                          }
-                          badges={[
-                            work.title_tr && { label: "TR" },
-                            work.title_de && { label: "DE" },
-                            work.title_es && { label: "ES" },
-                          ].filter(Boolean)}
-                        />
-                      )}
+                      renderItem={(item, idx) => {
+                        const work = item as Project;
+                        return (
+                          <AdminListItem
+                            key={work.id}
+                            index={idx}
+                            title={work.title}
+                            subtitle={work.description}
+                            image={work.image}
+                            fallbackIcon={<FolderKanban className="h-4 w-4" />}
+                            isFirst={idx === 0}
+                            isLast={idx === works.length - 1}
+                            isEditing={editingWorkId === work.id}
+                            onMoveUp={() => handleMoveWork(work.id, "up")}
+                            onMoveDown={() => handleMoveWork(work.id, "down")}
+                            onEdit={() => handleEditWork(work)}
+                            onDelete={() =>
+                              setDeleteConfirm({ type: "work", id: work.id })
+                            }
+                            badges={[
+                              work.title_tr && { label: "TR" },
+                              work.title_de && { label: "DE" },
+                              work.title_es && { label: "ES" },
+                            ].filter(Boolean) as AdminListItemBadge[]}
+                          />
+                        );
+                      }}
                     />
                   </AdminListView>
                 </div>
@@ -1182,31 +1128,33 @@ function AdminDashboardContent() {
                         description: "Start writing your first blog post.",
                         icon: <PenTool className="h-8 w-8 opacity-50" />,
                       }}
-                      renderItem={(blog: any, idx: number) => (
-                        <AdminListItem
-                          key={blog.id}
-                          index={idx}
-                          title={blog.title}
-                          subtitle={`${blog.date || "—"} · ${blog.read_time || "—"}`}
-                          image={blog.image_url}
-                          fallbackIcon={<PenTool className="h-4 w-4" />}
-                          isFirst={idx === 0}
-                          isLast={idx === blogs.length - 1}
-                          isEditing={editingBlogId === blog.id}
-                          onMoveUp={() => handleMoveBlog(blog.id, "up")}
-                          onMoveDown={() => handleMoveBlog(blog.id, "down")}
-                          onEdit={() => handleEditBlog(blog)}
-                          onDelete={() =>
-                            setDeleteConfirm({ type: "blog", id: blog.id })
-                          }
-                          badges={[
-                            blog.is_published
-                              ? { label: "Published", variant: "success" }
-                              : { label: "Draft", variant: "warning" },
-                            blog.title_tr && { label: "TR" },
-                            blog.title_de && { label: "DE" },
-                            blog.title_es && { label: "ES" },
-                          ].filter((b): b is AdminListItemBadge => !!b)}
+                      renderItem={(item, idx) => {
+                        const blog = item as Blog;
+                        return (
+                          <AdminListItem
+                            key={blog.id}
+                            index={idx}
+                            title={blog.title}
+                            subtitle={`${blog.date || "—"} · ${blog.read_time || "—"}`}
+                            image={blog.image_url}
+                            fallbackIcon={<PenTool className="h-4 w-4" />}
+                            isFirst={idx === 0}
+                            isLast={idx === blogs.length - 1}
+                            isEditing={editingBlogId === blog.id}
+                            onMoveUp={() => handleMoveBlog(blog.id, "up")}
+                            onMoveDown={() => handleMoveBlog(blog.id, "down")}
+                            onEdit={() => handleEditBlog(blog)}
+                            onDelete={() =>
+                              setDeleteConfirm({ type: "blog", id: blog.id })
+                            }
+                            badges={[
+                              blog.is_published
+                                ? { label: "Published", variant: "success" }
+                                : { label: "Draft", variant: "warning" },
+                              blog.title_tr && { label: "TR" },
+                              blog.title_de && { label: "DE" },
+                              blog.title_es && { label: "ES" },
+                            ].filter((b): b is AdminListItemBadge => !!b)}
                           actions={
                             <button
                               onClick={() => handleToggleBlogPublish(blog)}
@@ -1228,9 +1176,10 @@ function AdminDashboardContent() {
                                 <EyeOff className="h-4 w-4" />
                               )}
                             </button>
-                          }
-                        />
-                      )}
+                            }
+                          />
+                        );
+                      }}
                     />
                   </AdminListView>
                 </div>

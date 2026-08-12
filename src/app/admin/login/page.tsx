@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import Script from "next/script";
 
@@ -28,7 +29,7 @@ export default function AdminLoginPage() {
   const widgetIdRef = useRef<string | null>(null);
 
   const removeTurnstile = useCallback(() => {
-    const turnstile = (window as any).turnstile;
+    const turnstile = window.turnstile;
     if (widgetIdRef.current && turnstile) {
       try {
         turnstile.remove(widgetIdRef.current);
@@ -40,7 +41,7 @@ export default function AdminLoginPage() {
   }, []);
 
   const resetTurnstile = useCallback(() => {
-    const turnstile = (window as any).turnstile;
+    const turnstile = window.turnstile;
     if (widgetIdRef.current && turnstile) {
       try {
         turnstile.reset(widgetIdRef.current);
@@ -52,7 +53,7 @@ export default function AdminLoginPage() {
   }, []);
 
   const renderTurnstile = useCallback(() => {
-    const turnstile = (window as any).turnstile;
+    const turnstile = window.turnstile;
     const container = turnstileRef.current;
     const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
     if (!turnstile || !container || !siteKey) return;
@@ -292,13 +293,13 @@ export default function AdminLoginPage() {
                 </button>
               </form>
 
-              <a
+              <Link
                 href="/"
                 className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
                 Back to website
-              </a>
+              </Link>
             </div>
           </FadeIn>
         </div>

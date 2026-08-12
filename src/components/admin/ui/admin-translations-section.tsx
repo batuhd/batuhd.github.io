@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Languages, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AdminButton } from "./admin-button";
 
 interface AdminTranslationsSectionProps {
   children: React.ReactNode;

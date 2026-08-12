@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-export async function GET(request: Request) {
+export async function GET() {
   const token = process.env.GITHUB_TOKEN;
   const username = "batuhd";
 
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
 
     const data = await res.json();
     return NextResponse.json(data);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch GitHub data" },
       { status: 500 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
 import {
   Plus,
   Trash2,
@@ -27,6 +28,7 @@ import {
   type AdminListItemBadge,
 } from "./ui";
 import { AboutMeForm } from "./about-me-form";
+import type { SectionOrder, SkillCategory } from "@/types";
 
 const inputClass =
   "w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary";
@@ -124,28 +126,28 @@ export function ImageInputWithRecent({
       ]);
 
     const urls = new Set<string>();
-    edu.data?.forEach((d: any) => {
+    edu.data?.forEach((d: Record<string, string | null>) => {
       if (d.logo_url?.trim()) urls.add(d.logo_url);
     });
-    exp.data?.forEach((d: any) => {
+    exp.data?.forEach((d: Record<string, string | null>) => {
       if (d.logo_url?.trim()) urls.add(d.logo_url);
     });
-    proj.data?.forEach((d: any) => {
+    proj.data?.forEach((d: Record<string, string | null>) => {
       if (d.image?.trim()) urls.add(d.image);
     });
-    cert.data?.forEach((d: any) => {
+    cert.data?.forEach((d: Record<string, string | null>) => {
       if (d.icon_url?.trim()) urls.add(d.icon_url);
     });
-    about.data?.forEach((d: any) => {
+    about.data?.forEach((d: Record<string, string | null>) => {
       if (d.profile_photo_url?.trim()) urls.add(d.profile_photo_url);
     });
-    projImages.data?.forEach((d: any) => {
+    projImages.data?.forEach((d: Record<string, string | null>) => {
       if (d.image_url?.trim()) urls.add(d.image_url);
     });
-    blogs.data?.forEach((d: any) => {
+    blogs.data?.forEach((d: Record<string, string | null>) => {
       if (d.image_url?.trim()) urls.add(d.image_url);
     });
-    blogImages.data?.forEach((d: any) => {
+    blogImages.data?.forEach((d: Record<string, string | null>) => {
       if (d.image_url?.trim()) urls.add(d.image_url);
     });
 
@@ -208,10 +210,12 @@ export function ImageInputWithRecent({
                     }}
                     className="aspect-square relative cursor-pointer group rounded-md overflow-hidden border hover:border-primary transition-all"
                   >
-                    <img
+                    <Image
                       src={img}
                       alt="recent"
-                      className="w-full h-full object-cover"
+                      fill
+                      sizes="80px"
+                      className="object-cover"
                     />
                   </div>
                 ))}
@@ -244,7 +248,7 @@ export function AdminAboutTab() {
 
 export function AdminSkillsTab() {
   const { handleOperationError } = useAdminError();
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<SkillCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -271,7 +275,20 @@ export function AdminSkillsTab() {
   };
 
   useEffect(() => {
-    fetchItems();
+    let cancelled = false;
+    (async () => {
+      if (!supabase) return;
+      const { data } = await supabase
+        .from("skill_categories")
+        .select("*")
+        .order("order_index", { ascending: true });
+      if (cancelled) return;
+      if (data) setItems(data);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -325,7 +342,7 @@ export function AdminSkillsTab() {
     toast.success("Yetenek kategorisi başarıyla eklendi");
   };
 
-  const handleEdit = (item: any) => {
+  const handleEdit = (item: SkillCategory) => {
     setEditingId(item.id);
     setForm({
       title: item.title || "",
@@ -1072,9 +1089,12 @@ interface FieldConfig {
   junctionOtherKey?: string;
 }
 
+type CrudRowValue = string | number | boolean | string[] | null;
+type CrudFormValue = string | number | boolean | string[] | RoleEntry[];
+
 interface CrudItem {
   id: string;
-  [key: string]: any;
+  [key: string]: CrudRowValue;
 }
 
 export function AdminCrudTab({
@@ -1095,7 +1115,7 @@ export function AdminCrudTab({
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<Record<string, any>>({});
+  const [form, setForm] = useState<Record<string, CrudFormValue>>({});
   const [langTab, setLangTab] = useState<LangTab>("default");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -1108,7 +1128,7 @@ export function AdminCrudTab({
   const hasRoleList = roleListFields.length > 0;
 
   const emptyForm = () => {
-    const f: Record<string, any> = {};
+    const f: Record<string, CrudFormValue> = {};
     fields.forEach((field) => {
       if (field.type === "checkbox") f[field.key] = false;
       else if (field.type === "multi_select" || field.type === "role_list")
@@ -1163,8 +1183,48 @@ export function AdminCrudTab({
   };
 
   useEffect(() => {
-    fetchItems();
-  }, []);
+    let cancelled = false;
+    (async () => {
+      if (!supabase) return;
+      const { data } = await supabase
+        .from(tableName)
+        .select("*")
+        .order("order_index", { ascending: true });
+
+      const multiSelectFields = fields.filter(
+        (f) => f.type === "multi_select" && f.junctionTable,
+      );
+
+      if (data && multiSelectFields.length > 0 && !cancelled) {
+        for (const field of multiSelectFields) {
+          if (
+            !field.junctionTable ||
+            !field.junctionForeignKey ||
+            !field.junctionOtherKey
+          )
+            continue;
+          const { data: relData } = await supabase
+            .from(field.junctionTable)
+            .select("*");
+          if (relData) {
+            data.forEach((item) => {
+              const rels = relData.filter(
+                (r) => r[field.junctionForeignKey!] === item.id,
+              );
+              item[field.key] = rels.map((r) => r[field.junctionOtherKey!]);
+            });
+          }
+        }
+      }
+
+      if (cancelled) return;
+      if (data) setItems(data);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [fields, tableName]);
 
   const URL_FIELDS = [
     "logo_url",
@@ -1177,7 +1237,7 @@ export function AdminCrudTab({
   ];
 
   const buildPayload = () => {
-    const payload: Record<string, any> = {};
+    const payload: Record<string, CrudFormValue | null> = {};
     fields.forEach((field) => {
       if (field.type === "multi_select") return; // Handled separately
 
@@ -1187,7 +1247,7 @@ export function AdminCrudTab({
         return;
       }
       if (field.type === "number" && val !== "")
-        payload[field.key] = parseInt(val);
+        payload[field.key] = parseInt(String(val));
       else if (field.type === "checkbox") payload[field.key] = !!val;
       else if (typeof val === "string" && val.trim()) {
         payload[field.key] = URL_FIELDS.includes(field.key)
@@ -1210,7 +1270,7 @@ export function AdminCrudTab({
     e.preventDefault();
     if (!supabase) return;
     const maxOrder = items.reduce(
-      (max, item) => Math.max(max, item.order_index ?? 0),
+      (max, item) => Math.max(max, Number(item.order_index ?? 0)),
       -1,
     );
     const { data: insertedData, error } = await supabase
@@ -1231,7 +1291,7 @@ export function AdminCrudTab({
           !field.junctionOtherKey
         )
           continue;
-        const selectedIds = form[field.key] || [];
+        const selectedIds = (form[field.key] as string[]) || [];
         if (selectedIds.length > 0) {
           const inserts = selectedIds.map((valId: string) => ({
             [field.junctionForeignKey!]: newId,
@@ -1255,10 +1315,10 @@ export function AdminCrudTab({
 
   const handleEdit = (item: CrudItem) => {
     setEditingId(item.id);
-    const f: Record<string, any> = {};
+    const f: Record<string, CrudFormValue> = {};
     fields.forEach((field) => {
       if (field.type === "multi_select" || field.type === "role_list")
-        f[field.key] = item[field.key] || [];
+        f[field.key] = (item[field.key] as string[]) || [];
       else
         f[field.key] =
           item[field.key] ?? (field.type === "checkbox" ? false : "");
@@ -1268,12 +1328,12 @@ export function AdminCrudTab({
         f[field.key] !== "" &&
         f[field.key] !== false
       )
-        f[field.key] = f[field.key]?.toString() || "";
+        f[field.key] = ((f[field.key] as number) ?? "").toString();
     });
     if (hasTranslatable)
       translatableFields.forEach((field) => {
         ["tr", "de", "es"].forEach((lang) => {
-          f[`${field.key}_${lang}`] = item[`${field.key}_${lang}`] || "";
+          f[`${field.key}_${lang}`] = (item[`${field.key}_${lang}`] as string) || "";
         });
       });
     setForm(f);
@@ -1318,7 +1378,7 @@ export function AdminCrudTab({
       if (handleOperationError(junctionDelError, `${title} İlişki Temizleme`))
         return;
 
-      const selectedIds = form[field.key] || [];
+      const selectedIds = (form[field.key] as string[]) || [];
       if (selectedIds.length > 0) {
         const inserts = selectedIds.map((valId: string) => ({
           [field.junctionForeignKey!]: editingId,
@@ -1401,7 +1461,7 @@ export function AdminCrudTab({
               </label>
               {field.type === "textarea" ? (
                 <textarea
-                  value={form[`${field.key}_${langTab}`] || ""}
+                  value={(form[`${field.key}_${langTab}`] as string) || ""}
                   onChange={(e) =>
                     setForm({
                       ...form,
@@ -1409,11 +1469,11 @@ export function AdminCrudTab({
                     })
                   }
                   className={`${inputClass} min-h-[80px]`}
-                  placeholder={form[field.key] || "Translation..."}
+                  placeholder={(form[field.key] as string) || "Translation..."}
                 />
               ) : (
                 <input
-                  value={form[`${field.key}_${langTab}`] || ""}
+                  value={(form[`${field.key}_${langTab}`] as string) || ""}
                   onChange={(e) =>
                     setForm({
                       ...form,
@@ -1421,7 +1481,7 @@ export function AdminCrudTab({
                     })
                   }
                   className={inputClass}
-                  placeholder={form[field.key] || "Translation..."}
+                  placeholder={(form[field.key] as string) || "Translation..."}
                 />
               )}
             </div>
@@ -1432,7 +1492,7 @@ export function AdminCrudTab({
                 {field.label} ({langTab.toUpperCase()})
               </label>
               <RoleListInput
-                value={form[field.key] || []}
+                value={(form[field.key] as unknown as RoleEntry[]) || []}
                 onChange={(val) => setForm({ ...form, [field.key]: val })}
                 langTab={langTab}
               />
@@ -1465,7 +1525,7 @@ export function AdminCrudTab({
             {field.type === "textarea" ? (
               <textarea
                 required={field.required}
-                value={form[field.key] || ""}
+                value={(form[field.key] as string) || ""}
                 onChange={(e) =>
                   setForm({ ...form, [field.key]: e.target.value })
                 }
@@ -1494,7 +1554,7 @@ export function AdminCrudTab({
               </div>
             ) : field.type === "month_year" ? (
               <MonthYearInput
-                value={form[field.key] || ""}
+                value={(form[field.key] as string) || ""}
                 onChange={(val) => setForm({ ...form, [field.key]: val })}
                 disabled={field.key === "end_date" && !!form["is_current"]}
                 className={inputClass}
@@ -1502,7 +1562,7 @@ export function AdminCrudTab({
             ) : field.type === "select" ? (
               <select
                 required={field.required}
-                value={form[field.key] || ""}
+                value={(form[field.key] as string) || ""}
                 onChange={(e) =>
                   setForm({ ...form, [field.key]: e.target.value })
                 }
@@ -1520,7 +1580,8 @@ export function AdminCrudTab({
             ) : field.type === "multi_select" ? (
               <div className="grid grid-cols-2 gap-2 mt-2">
                 {field.options?.map((opt) => {
-                  const isChecked = (form[field.key] || []).includes(opt.value);
+                  const values = (form[field.key] as string[]) || [];
+                  const isChecked = values.includes(opt.value);
                   return (
                     <label
                       key={opt.value}
@@ -1531,7 +1592,7 @@ export function AdminCrudTab({
                         className="h-4 w-4 rounded border accent-primary"
                         checked={isChecked}
                         onChange={(e) => {
-                          const currentValues = form[field.key] || [];
+                          const currentValues = (form[field.key] as string[]) || [];
                           if (e.target.checked) {
                             setForm({
                               ...form,
@@ -1554,7 +1615,7 @@ export function AdminCrudTab({
               </div>
             ) : field.type === "role_list" ? (
               <RoleListInput
-                value={form[field.key] || []}
+                value={(form[field.key] as unknown as RoleEntry[]) || []}
                 onChange={(val) => setForm({ ...form, [field.key]: val })}
                 langTab={langTab}
               />
@@ -1562,7 +1623,7 @@ export function AdminCrudTab({
               field.key.includes("icon") ||
               field.key.includes("image") ? (
               <ImageInputWithRecent
-                value={form[field.key] || ""}
+                value={(form[field.key] as string) || ""}
                 onChange={(val) => setForm({ ...form, [field.key]: val })}
                 className={inputClass}
                 placeholder={field.placeholder}
@@ -1571,7 +1632,7 @@ export function AdminCrudTab({
               <input
                 type={field.type === "number" ? "number" : "text"}
                 required={field.required}
-                value={form[field.key] || ""}
+                value={(form[field.key] as string) || ""}
                 onChange={(e) =>
                   setForm({ ...form, [field.key]: e.target.value })
                 }
@@ -1670,12 +1731,13 @@ export function AdminCrudTab({
             title: "No items yet",
             description: "Add your first item to get started.",
           }}
-          renderItem={(item: any, idx: number) => {
+          renderItem={(item, idx) => {
+            const crudItem = item as CrudItem;
             const badges: AdminListItemBadge[] = [];
             if (hasTranslatable) {
               ["tr", "de", "es"].forEach((lang) => {
                 const has = translatableFields.some(
-                  (f) => item[`${f.key}_${lang}`],
+                  (f) => crudItem[`${f.key}_${lang}`],
                 );
                 if (has) badges.push({ label: lang.toUpperCase() });
               });
@@ -1683,17 +1745,17 @@ export function AdminCrudTab({
 
             return (
               <AdminListItem
-                key={item.id}
+                key={crudItem.id}
                 index={idx}
-                title={item[displayField] || "—"}
-                subtitle={subtitleField ? item[subtitleField] || "" : undefined}
+                title={String(crudItem[displayField] ?? "—")}
+                subtitle={subtitleField ? String(crudItem[subtitleField] ?? "") : undefined}
                 isFirst={idx === 0}
                 isLast={idx === items.length - 1}
-                isEditing={editingId === item.id}
-                onMoveUp={() => handleMove(item.id, "up")}
-                onMoveDown={() => handleMove(item.id, "down")}
-                onEdit={() => handleEdit(item)}
-                onDelete={() => handleDelete(item.id)}
+                isEditing={editingId === crudItem.id}
+                onMoveUp={() => handleMove(crudItem.id, "up")}
+                onMoveDown={() => handleMove(crudItem.id, "down")}
+                onEdit={() => handleEdit(crudItem)}
+                onDelete={() => handleDelete(crudItem.id)}
                 badges={badges.length > 0 ? badges : undefined}
               />
             );
@@ -1736,14 +1798,27 @@ export function AdminSocialLinksTab() {
   };
 
   useEffect(() => {
-    fetchItems();
+    let cancelled = false;
+    (async () => {
+      if (!supabase) return;
+      const { data } = await supabase
+        .from("social_links")
+        .select("*")
+        .order("order_index", { ascending: true });
+      if (cancelled) return;
+      if (data) setItems(data);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supabase) return;
     const maxOrder = items.reduce(
-      (max, item) => Math.max(max, item.order_index ?? 0),
+      (max, item) => Math.max(max, Number(item.order_index ?? 0)),
       -1,
     );
     const { error } = await supabase
@@ -1758,7 +1833,10 @@ export function AdminSocialLinksTab() {
 
   const handleEdit = (item: CrudItem) => {
     setEditingId(item.id);
-    setForm({ platform: item.platform || "", url: item.url || "" });
+    setForm({
+      platform: (item.platform as string) || "",
+      url: (item.url as string) || "",
+    });
     setIsAdding(false);
   };
 
@@ -2010,7 +2088,7 @@ export function AdminSocialLinksTab() {
 
 export function AdminLayoutTab() {
   const { handleOperationError } = useAdminError();
-  const [sections, setSections] = useState<any[]>([]);
+  const [sections, setSections] = useState<SectionOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
 
@@ -2044,7 +2122,41 @@ export function AdminLayoutTab() {
   };
 
   useEffect(() => {
-    fetchSections();
+    let cancelled = false;
+    (async () => {
+      if (!supabase) return;
+      const { data } = await supabase
+        .from("section_order")
+        .select("*")
+        .order("order_index", { ascending: true });
+
+      if (cancelled) return;
+
+      if (data && data.length === 0) {
+        const defaultOrder = [
+          { section_id: "skills", order_index: 0 },
+          { section_id: "experience", order_index: 1 },
+          { section_id: "education", order_index: 2 },
+          { section_id: "languages", order_index: 3 },
+          { section_id: "activities", order_index: 4 },
+          { section_id: "certifications", order_index: 5 },
+        ];
+        await supabase.from("section_order").insert(defaultOrder);
+        if (cancelled) return;
+        setSections(defaultOrder);
+      } else {
+        setSections(
+          data ? data.filter((d) => d.section_id !== "maintenance_mode") : [],
+        );
+        setMaintenanceMode(
+          data?.some((d) => d.section_id === "maintenance_mode") || false,
+        );
+      }
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleMove = async (id: string, direction: "up" | "down") => {
@@ -2078,7 +2190,7 @@ export function AdminLayoutTab() {
     toast.success("Bölüm sıralaması güncellendi");
   };
 
-  const handleToggleVisibility = async (sec: any) => {
+  const handleToggleVisibility = async (sec: SectionOrder) => {
     if (!supabase) return;
 
     const isHidden = sec.section_id.endsWith("_hidden");
@@ -2298,14 +2410,27 @@ export function AdminContactEmailsTab() {
   };
 
   useEffect(() => {
-    fetchItems();
+    let cancelled = false;
+    (async () => {
+      if (!supabase) return;
+      const { data } = await supabase
+        .from("contact_emails")
+        .select("*")
+        .order("order_index", { ascending: true });
+      if (cancelled) return;
+      if (data) setItems(data);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supabase) return;
     const maxOrder = items.reduce(
-      (max, item) => Math.max(max, item.order_index ?? 0),
+      (max, item) => Math.max(max, Number(item.order_index ?? 0)),
       -1,
     );
     const { error } = await supabase
@@ -2322,11 +2447,11 @@ export function AdminContactEmailsTab() {
   const handleEdit = (item: CrudItem) => {
     setEditingId(item.id);
     setForm({
-      label: item.label || "",
-      label_tr: item.label_tr || "",
-      label_de: item.label_de || "",
-      label_es: item.label_es || "",
-      email: item.email || "",
+      label: (item.label as string) || "",
+      label_tr: (item.label_tr as string) || "",
+      label_de: (item.label_de as string) || "",
+      label_es: (item.label_es as string) || "",
+      email: (item.email as string) || "",
     });
     setIsAdding(false);
     setLangTab("default");

@@ -24,19 +24,22 @@ export function AdminEasterEggConfigTab() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const fetchConfig = async () => {
-    if (!supabase) return;
-    const { data } = await supabase
-      .from("easter_egg_config")
-      .select("*")
-      .limit(1)
-      .single();
-    if (data) setConfig(data as ConfigData);
-    setLoading(false);
-  };
-
   useEffect(() => {
-    fetchConfig();
+    let cancelled = false;
+    (async () => {
+      if (!supabase) return;
+      const { data } = await supabase
+        .from("easter_egg_config")
+        .select("*")
+        .limit(1)
+        .single();
+      if (cancelled) return;
+      if (data) setConfig(data as ConfigData);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -82,7 +85,7 @@ export function AdminEasterEggConfigTab() {
   if (!config)
     return (
       <div className="text-center py-12 text-muted-foreground">
-        Config bulunamadı. Lütfen Supabase'de easter_egg_config tablosunu
+        Config bulunamadı. Lütfen Supabase&apos;de easter_egg_config tablosunu
         kontrol edin.
       </div>
     );

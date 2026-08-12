@@ -8,6 +8,14 @@ import {
   AdminTranslationsSection,
   AdminTranslationCard,
 } from "./ui/admin-translations-section";
+import type {
+  Experience,
+  Education,
+  SkillCategory,
+  Language,
+  Activity,
+  Certification,
+} from "@/types";
 
 const inputClass =
   "w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary";
@@ -40,12 +48,12 @@ interface WorkFormProps {
   onChange: (updates: Partial<WorkFormData>) => void;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
-  experiences: any[];
-  educations: any[];
-  skillCategories: any[];
-  languages: any[];
-  activities: any[];
-  certifications: any[];
+  experiences: Experience[];
+  educations: Education[];
+  skillCategories: SkillCategory[];
+  languages: Language[];
+  activities: Activity[];
+  certifications: Certification[];
 }
 
 export function WorkForm({
@@ -245,7 +253,7 @@ export function WorkForm({
                   className={inputClass}
                 >
                   <option value="">(None)</option>
-                  {experiences.map((e: any) => (
+                  {experiences.map((e: Experience) => (
                     <option key={e.id} value={e.id}>
                       {e.title} at {e.company}
                     </option>
@@ -264,7 +272,7 @@ export function WorkForm({
                   className={inputClass}
                 >
                   <option value="">(None)</option>
-                  {educations.map((e: any) => (
+                  {educations.map((e: Education) => (
                     <option key={e.id} value={e.id}>
                       {e.university}
                     </option>
@@ -276,7 +284,7 @@ export function WorkForm({
                   Link Skill Categories
                 </label>
                 <div className="flex flex-wrap gap-2 p-2 rounded-md border bg-background/50 max-h-40 overflow-y-auto">
-                  {skillCategories.map((s: any) => {
+                  {skillCategories.map((s: SkillCategory) => {
                     const isSelected =
                       form.linked_skill_category_ids?.includes(s.id);
                     return (
@@ -321,7 +329,7 @@ export function WorkForm({
                   className={inputClass}
                 >
                   <option value="">(None)</option>
-                  {languages.map((l: any) => (
+                  {languages.map((l: Language) => (
                     <option key={l.id} value={l.id}>
                       {l.name}
                     </option>
@@ -340,7 +348,7 @@ export function WorkForm({
                   className={inputClass}
                 >
                   <option value="">(None)</option>
-                  {activities.map((a: any) => (
+                  {activities.map((a: Activity) => (
                     <option key={a.id} value={a.id}>
                       {a.organization}
                     </option>
@@ -359,7 +367,7 @@ export function WorkForm({
                   className={inputClass}
                 >
                   <option value="">(None)</option>
-                  {certifications.map((c: any) => (
+                  {certifications.map((c: Certification) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
