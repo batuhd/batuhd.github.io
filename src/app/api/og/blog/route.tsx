@@ -4,8 +4,6 @@ import { fetchBlogData } from "@/lib/data";
 import { readFileSync } from "fs";
 import { join } from "path";
 
-export const runtime = "nodejs";
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const postId = searchParams.get("post");
@@ -54,6 +52,7 @@ export async function GET(request: NextRequest) {
             marginBottom: 48,
           }}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={logoSrc}
             alt=""

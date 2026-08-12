@@ -1,10 +1,12 @@
 import { fetchHomeData, getLocalized } from "@/lib/data";
+import { sanitizeUrl } from "@/lib/utils";
 import { Metadata } from "next";
 import { LanguageProvider } from "@/context/language-context";
 import { SiteDataProvider } from "@/context/site-data-context";
 import { Certifications } from "@/components/home/profile-sections";
 import { siteConfig } from "@/config/site";
 import { JsonLd, educationalCredentialJsonLd, breadcrumbJsonLd } from "@/components/json-ld";
+import type { Project, Blog } from "@/types";
 
 export const revalidate = 60;
 
@@ -77,19 +79,27 @@ export default async function CertificationsPage({
   const selectedCert = cert
     ? data.certifications.find((c) => c.id === cert)
     : null;
+
+  const safeCertLinkUrl = selectedCert?.link_url
+    ? sanitizeUrl(selectedCert.link_url)
+    : null;
+  const safeCertIconUrl = selectedCert?.icon_url
+    ? sanitizeUrl(selectedCert.icon_url)
+    : null;
+
   const credentialSchema = selectedCert
     ? educationalCredentialJsonLd({
         name: getLocalized(selectedCert, "name", "en"),
         description: `Certification issued by ${getLocalized(selectedCert, "issuer", "en")}`,
-        url: selectedCert.link_url
-          ? selectedCert.link_url.startsWith("/")
-            ? `${siteConfig.url}${selectedCert.link_url}`
-            : selectedCert.link_url
+        url: safeCertLinkUrl
+          ? safeCertLinkUrl.startsWith("/")
+            ? `${siteConfig.url}${safeCertLinkUrl}`
+            : safeCertLinkUrl
           : `${siteConfig.url}/certifications?cert=${selectedCert.id}`,
-        image: selectedCert.icon_url
-          ? selectedCert.icon_url.startsWith("/")
-            ? `${siteConfig.url}${selectedCert.icon_url}`
-            : selectedCert.icon_url
+        image: safeCertIconUrl
+          ? safeCertIconUrl.startsWith("/")
+            ? `${siteConfig.url}${safeCertIconUrl}`
+            : safeCertIconUrl
           : undefined,
         organization: getLocalized(selectedCert, "issuer", "en"),
       })
@@ -118,8 +128,8 @@ export default async function CertificationsPage({
     certifications: data.certifications,
     certificationSkills: data.certificationSkills,
     sectionOrder: data.sectionOrder,
-    projects: data.projects || [],
-    blogs: data.blogs || [],
+    projects: (data.projects || []) as Project[],
+    blogs: (data.blogs || []) as Blog[],
     loaded: true,
     isMaintenance: data.sectionOrder.some(
       (s) => s.section_id === "maintenance_mode",

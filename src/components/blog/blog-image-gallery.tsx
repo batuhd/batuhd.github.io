@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
@@ -23,8 +24,6 @@ export function BlogImageGallery({
   const allImages = mainImage
     ? [{ image_url: mainImage, caption: undefined }, ...images]
     : images;
-
-  if (allImages.length === 0) return null;
 
   const handlePrev = useCallback((e?: { stopPropagation: () => void }) => {
     e?.stopPropagation();
@@ -68,6 +67,8 @@ export function BlogImageGallery({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [lightboxOpen]);
 
+  if (allImages.length === 0) return null;
+
   return (
     <>
       {/* Main Gallery Display */}
@@ -77,10 +78,12 @@ export function BlogImageGallery({
           className="relative aspect-video w-full overflow-hidden rounded-xl bg-muted cursor-pointer group"
           onClick={() => setLightboxOpen(true)}
         >
-          <img
+          <Image
             src={allImages[currentIndex]?.image_url}
             alt={`${title} - ${currentIndex + 1}`}
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            fill
+            sizes="(max-width: 768px) 100vw, 80vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
 
           {/* Navigation Arrows (only if multiple images) */}
@@ -121,10 +124,12 @@ export function BlogImageGallery({
                     : "border-transparent hover:border-muted-foreground/30",
                 )}
               >
-                <img
+                <Image
                   src={img.image_url}
                   alt={`Thumbnail ${idx + 1}`}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="96px"
+                  className="object-cover"
                 />
               </button>
             ))}
@@ -165,10 +170,12 @@ export function BlogImageGallery({
               className="relative max-h-[80vh] max-w-[90vw]"
               onClick={(e) => e.stopPropagation()}
             >
-              <img
+              <Image
                 src={allImages[currentIndex]?.image_url}
                 alt={`${title} - ${currentIndex + 1}`}
-                className="max-h-[80vh] max-w-[90vw] object-contain rounded-lg"
+                fill
+                sizes="90vw"
+                className="object-contain rounded-lg"
               />
 
               {/* Navigation in Lightbox */}
@@ -223,10 +230,12 @@ export function BlogImageGallery({
                         : "border-transparent hover:border-white/50",
                     )}
                   >
-                    <img
+                    <Image
                       src={img.image_url}
                       alt={`Thumbnail ${idx + 1}`}
-                      className="h-full w-full object-cover"
+                      fill
+                      sizes="64px"
+                      className="object-cover"
                     />
                   </button>
                 ))}

@@ -22,21 +22,17 @@ import { motion, AnimatePresence } from "motion/react";
 import { useLanguage } from "@/context/language-context";
 import Link from "next/link";
 import { BlogImageGallery } from "@/components/blog/blog-image-gallery";
+import Image from "next/image";
 import type { ProjectWithImages } from "@/lib/data";
-
-interface LinkedEntity {
-  id: string;
-  title: string;
-  type: string;
-  originalObj: any;
-}
+import type { LinkedEntity } from "@/types";
 
 interface RelatedBlog {
   id: string;
   title: string;
-  excerpt: string;
+  excerpt: string | null;
   date: string;
-  read_time: string;
+  read_time: string | null;
+  linked_project_id?: string | null;
 }
 
 interface WorksContentProps {
@@ -58,7 +54,8 @@ export function WorksContent({
   const searchParams = useSearchParams();
   const projectIdFromUrl = searchParams.get("project");
 
-  // URL'den proje açma/kapatma
+  /* eslint-disable react-hooks/set-state-in-effect */
+  // URL'den proje açma/kapatma — client-only deep link senkronizasyonu
   useEffect(() => {
     if (!projectIdFromUrl) {
       setSelectedProject(null);
@@ -68,6 +65,7 @@ export function WorksContent({
     const target = projects.find((p) => p.id === projectIdFromUrl);
     if (target) setSelectedProject(target);
   }, [projectIdFromUrl, projects]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const openProject = (project: ProjectWithImages) => {
     setSelectedProject(project);
@@ -99,19 +97,20 @@ export function WorksContent({
 
   const getEntityTitle = (entity: LinkedEntity) => {
     if (!entity.originalObj) return entity.title;
+    const obj = entity.originalObj as Record<string, unknown>;
     switch (entity.type) {
       case "experience":
-        return `${getLocalized(entity.originalObj, "title")} - ${entity.originalObj.company}`;
+        return `${getLocalized(obj, "title")} - ${String(obj.company ?? "")}`;
       case "education":
-        return getLocalized(entity.originalObj, "university");
+        return getLocalized(obj, "university");
       case "language":
-        return getLocalized(entity.originalObj, "name");
+        return getLocalized(obj, "name");
       case "activity":
-        return getLocalized(entity.originalObj, "organization");
+        return getLocalized(obj, "organization");
       case "certification":
-        return getLocalized(entity.originalObj, "name");
+        return getLocalized(obj, "name");
       case "skill":
-        return getLocalized(entity.originalObj, "title");
+        return getLocalized(obj, "title");
       default:
         return entity.title;
     }
@@ -166,7 +165,7 @@ export function WorksContent({
                   <div className="space-y-4">
                     {project.image && typeof project.image === "string" && (
                       <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-muted">
-                        <img
+                        <Image
                           src={
                             project.image.startsWith("http") ||
                             project.image.startsWith("/")
@@ -174,7 +173,9 @@ export function WorksContent({
                               : `/${project.image}`
                           }
                           alt={String(project.title || "")}
-                          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          fill
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       </div>
                     )}
@@ -397,7 +398,7 @@ export function WorksContent({
                 {/* Related Blog Posts */}
                 {(() => {
                   const projectBlogs = relatedBlogs.filter(
-                    (b: any) => b.linked_project_id === selectedProject.id,
+                    (b) => b.linked_project_id === selectedProject.id,
                   );
                   if (projectBlogs.length === 0) return null;
                   return (

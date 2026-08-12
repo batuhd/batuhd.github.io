@@ -17,10 +17,9 @@ import { useLanguage } from "@/context/language-context";
 interface ShareButtonsProps {
   title: string;
   url: string;
-  excerpt?: string;
 }
 
-export function ShareButtons({ title, url, excerpt }: ShareButtonsProps) {
+export function ShareButtons({ title, url }: ShareButtonsProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const { t } = useLanguage();

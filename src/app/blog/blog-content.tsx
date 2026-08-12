@@ -23,14 +23,9 @@ import { ShareButtons } from "@/components/blog/share-buttons";
 import { motion, AnimatePresence } from "motion/react";
 import { useLanguage } from "@/context/language-context";
 import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
+import Image from "next/image";
 import type { BlogWithImages } from "@/lib/data";
-
-interface LinkedEntity {
-  id: string;
-  title: string;
-  type: string;
-  originalObj: any;
-}
+import type { LinkedEntity } from "@/types";
 
 interface BlogContentProps {
   initialBlogs: BlogWithImages[];
@@ -48,7 +43,8 @@ export function BlogContent({ initialBlogs, entityMap }: BlogContentProps) {
   const searchParams = useSearchParams();
   const postIdFromUrl = searchParams.get("post");
 
-  // URL'den post açma/kapatma
+  /* eslint-disable react-hooks/set-state-in-effect */
+  // URL'den post açma/kapatma — client-only deep link senkronizasyonu
   useEffect(() => {
     if (!postIdFromUrl) {
       setSelectedPost(null);
@@ -58,6 +54,7 @@ export function BlogContent({ initialBlogs, entityMap }: BlogContentProps) {
     const target = posts.find((p) => p.id === postIdFromUrl);
     if (target) setSelectedPost(target);
   }, [postIdFromUrl, posts]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const openPost = (post: BlogWithImages) => {
     setSelectedPost(post);
@@ -189,7 +186,7 @@ export function BlogContent({ initialBlogs, entityMap }: BlogContentProps) {
 
                     {post.image_url && typeof post.image_url === "string" && (
                       <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-muted mt-2 mb-2">
-                        <img
+                        <Image
                           src={
                             post.image_url.startsWith("http") ||
                             post.image_url.startsWith("/")
@@ -197,7 +194,9 @@ export function BlogContent({ initialBlogs, entityMap }: BlogContentProps) {
                               : `/${post.image_url}`
                           }
                           alt={String(post.title || "")}
-                          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          fill
+                          sizes="(max-width: 768px) 100vw, 672px"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       </div>
                     )}
@@ -322,7 +321,6 @@ export function BlogContent({ initialBlogs, entityMap }: BlogContentProps) {
                   <ShareButtons
                     title={getLocalized(selectedPost, "title", "Untitled")}
                     url={`${typeof window !== "undefined" ? window.location.origin : ""}/blog?post=${selectedPost.id}`}
-                    excerpt={getLocalized(selectedPost, "excerpt", "")}
                   />
                   <button
                     onClick={() => closePost()}

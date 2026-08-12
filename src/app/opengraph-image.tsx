@@ -31,6 +31,7 @@ export default function OpenGraphImage() {
           padding: 60,
         }}
       >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={logoSrc}
           alt=""
