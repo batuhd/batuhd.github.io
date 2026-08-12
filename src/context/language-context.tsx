@@ -25,8 +25,7 @@ interface LanguageContextType {
   setLocale: (locale: Locale) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
   getLocalized: (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    item: Record<string, any> | null | undefined,
+    item: unknown,
     field: string,
     fallback?: string
   ) => string;
@@ -70,20 +69,19 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
    * Tries `field_locale` first, falls back to `field`.
    * Example: getLocalized(project, "title") → project.title_tr || project.title
    */
-  const getLocalized = (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    item: Record<string, any> | null | undefined,
-    field: string,
-    fallback = ""
-  ) => {
-    if (!item) return fallback;
+  const getLocalized = (item: unknown, field: string, fallback = "") => {
+    if (!item || typeof item !== "object") return fallback;
+
+    const record = item as Record<string, unknown>;
     if (locale !== "en") {
       const localizedKey = `${field}_${locale}`;
-      if (item[localizedKey] && String(item[localizedKey]).trim()) {
-        return String(item[localizedKey]);
+      const localizedValue = record[localizedKey];
+      if (localizedValue !== undefined && localizedValue !== null && String(localizedValue).trim()) {
+        return String(localizedValue);
       }
     }
-    return String(item[field] || fallback);
+    const value = record[field];
+    return value !== undefined && value !== null ? String(value) : fallback;
   };
 
   return (

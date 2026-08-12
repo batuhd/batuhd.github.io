@@ -8,22 +8,38 @@ import {
   ReactNode,
 } from "react";
 import { supabase } from "@/lib/supabase";
+import type {
+  AboutMe,
+  SkillCategory,
+  Experience,
+  Education,
+  Language,
+  Activity,
+  Certification,
+  CertificationSkill,
+  SectionOrder,
+  Project,
+  Blog,
+  SocialLink,
+  ContactEmail,
+  EasterEgg,
+} from "@/types";
 
 interface SiteData {
-  aboutMe: any | null;
-  skillCategories: any[];
-  experiences: any[];
-  educations: any[];
-  languages: any[];
-  activities: any[];
-  certifications: any[];
-  certificationSkills: any[];
-  sectionOrder: any[];
-  projects: any[];
-  blogs: any[];
-  socialLinks: any[];
-  contactEmails: any[];
-  easterEggs: any[];
+  aboutMe: AboutMe | null;
+  skillCategories: SkillCategory[];
+  experiences: Experience[];
+  educations: Education[];
+  languages: Language[];
+  activities: Activity[];
+  certifications: Certification[];
+  certificationSkills: CertificationSkill[];
+  sectionOrder: SectionOrder[];
+  projects: Project[];
+  blogs: Blog[];
+  socialLinks: SocialLink[];
+  contactEmails: ContactEmail[];
+  easterEggs: EasterEgg[];
   loaded: boolean;
   isMaintenance: boolean;
 }
@@ -68,12 +84,13 @@ export function SiteDataProvider({
       return;
     }
 
-    if (!supabase) {
-      setData((d) => ({ ...d, loaded: true }));
-      return;
-    }
+    let cancelled = false;
+    (async () => {
+      if (!supabase) {
+        if (!cancelled) setData((d) => ({ ...d, loaded: true }));
+        return;
+      }
 
-    const fetchAll = async () => {
       const sb = supabase!;
       const [
         aboutRes,
@@ -137,6 +154,8 @@ export function SiteDataProvider({
           .order("order_index", { ascending: true }),
       ]);
 
+      if (cancelled) return;
+
       setData({
         aboutMe: aboutRes.data?.[0] || null,
         skillCategories: skillsRes.data || [],
@@ -147,20 +166,22 @@ export function SiteDataProvider({
         certifications: certRes.data || [],
         certificationSkills: certSkillsRes.data || [],
         sectionOrder: sectionRes?.data || [],
-        projects: projectsRes?.data || [],
-        blogs: blogsRes?.data || [],
+        projects: (projectsRes?.data || []) as unknown as Project[],
+        blogs: (blogsRes?.data || []) as unknown as Blog[],
         socialLinks: [],
         contactEmails: [],
-        easterEggs: easterEggsRes?.data || [],
+        easterEggs: (easterEggsRes?.data || []) as unknown as EasterEgg[],
         loaded: true,
         isMaintenance:
           sectionRes?.data?.some(
-            (s: any) => s.section_id === "maintenance_mode",
+            (s: SectionOrder) => s.section_id === "maintenance_mode",
           ) || false,
       });
-    };
+    })();
 
-    fetchAll();
+    return () => {
+      cancelled = true;
+    };
   }, [initialData]);
 
   return (
