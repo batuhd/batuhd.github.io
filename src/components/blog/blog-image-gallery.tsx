@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -12,6 +13,8 @@ interface BlogImageGalleryProps {
   title: string;
 }
 
+const emptySubscribe = () => () => {};
+
 export function BlogImageGallery({
   images,
   mainImage,
@@ -19,6 +22,22 @@ export function BlogImageGallery({
 }: BlogImageGalleryProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const isMounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+
+  // Prevent body scroll when lightbox is open
+  useEffect(() => {
+    if (lightboxOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [lightboxOpen]);
 
   // Main image + additional images
   const allImages = mainImage
@@ -145,105 +164,109 @@ export function BlogImageGallery({
       </div>
 
       {/* Lightbox Modal */}
-      <AnimatePresence>
-        {lightboxOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 px-4"
-            onClick={() => setLightboxOpen(false)}
-          >
-            {/* Close Button */}
-            <button
-              onClick={() => setLightboxOpen(false)}
-              className="absolute right-4 top-4 rounded-full bg-background/20 p-2 text-white hover:bg-background/30 transition-colors"
-            >
-              <X className="h-6 w-6" />
-            </button>
-
-            {/* Image Container */}
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative max-h-[80vh] max-w-[90vw]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Image
-                src={allImages[currentIndex]?.image_url}
-                alt={`${title} - ${currentIndex + 1}`}
-                fill
-                sizes="90vw"
-                className="object-contain rounded-lg"
-              />
-
-              {/* Navigation in Lightbox */}
-              {allImages.length > 1 && (
-                <>
+      {isMounted &&
+        createPortal(
+          <AnimatePresence>
+            {lightboxOpen && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[200] flex flex-col bg-black/95 select-none"
+                onClick={() => setLightboxOpen(false)}
+              >
+                {/* Top bar (Close button & Counter/Title) */}
+                <div className="relative flex items-center justify-between p-4 z-[210] text-white">
+                  <div className="text-sm font-medium opacity-80 pl-2">
+                    {allImages.length > 1 && `${currentIndex + 1} / ${allImages.length}`}
+                  </div>
                   <button
-                    onClick={handlePrev}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-background/20 p-3 text-white hover:bg-background/30 transition-colors"
+                    onClick={() => setLightboxOpen(false)}
+                    className="rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition-colors cursor-pointer"
                   >
-                    <ChevronLeft className="h-6 w-6" />
+                    <X className="h-6 w-6" />
                   </button>
-                  <button
-                    onClick={handleNext}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-background/20 p-3 text-white hover:bg-background/30 transition-colors"
-                  >
-                    <ChevronRight className="h-6 w-6" />
-                  </button>
-                </>
-              )}
-            </motion.div>
+                </div>
 
-            {/* Caption in Lightbox */}
-            {(allImages[currentIndex]?.caption || allImages.length > 1) && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-background/20 px-4 py-2 text-center">
-                {allImages[currentIndex]?.caption && (
-                  <p className="text-sm text-white">
-                    {allImages[currentIndex].caption}
-                  </p>
-                )}
-                {allImages.length > 1 && (
-                  <p className="text-xs text-white/70">
-                    {currentIndex + 1} / {allImages.length}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Thumbnail strip at bottom */}
-            {allImages.length > 1 && (
-              <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 overflow-x-auto max-w-[80vw] px-4">
-                {allImages.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCurrentIndex(idx);
-                    }}
-                    className={cn(
-                      "relative flex-shrink-0 h-12 w-16 overflow-hidden rounded border-2 transition-all",
-                      idx === currentIndex
-                        ? "border-white ring-2 ring-white/20"
-                        : "border-transparent hover:border-white/50",
-                    )}
+                {/* Main content (Image + Nav arrows) */}
+                <div className="relative flex-1 flex items-center justify-center px-4 md:px-16 min-h-0">
+                  <motion.div
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.95, opacity: 0 }}
+                    className="relative w-full h-full max-w-6xl max-h-[70vh]"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <Image
-                      src={img.image_url}
-                      alt={`Thumbnail ${idx + 1}`}
+                      src={allImages[currentIndex]?.image_url}
+                      alt={`${title} - ${currentIndex + 1}`}
                       fill
-                      sizes="64px"
-                      className="object-cover"
+                      sizes="90vw"
+                      className="object-contain rounded-lg select-none pointer-events-none"
+                      priority
                     />
-                  </button>
-                ))}
-              </div>
+                  </motion.div>
+
+                  {/* Navigation Arrows inside the main container but overlaying the image */}
+                  {allImages.length > 1 && (
+                    <>
+                      <button
+                        onClick={handlePrev}
+                        className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white hover:bg-black/80 transition-colors z-[210] cursor-pointer"
+                      >
+                        <ChevronLeft className="h-6 w-6" />
+                      </button>
+                      <button
+                        onClick={handleNext}
+                        className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white hover:bg-black/80 transition-colors z-[210] cursor-pointer"
+                      >
+                        <ChevronRight className="h-6 w-6" />
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* Bottom Bar (Caption + Thumbnails) */}
+                <div className="p-4 flex flex-col items-center gap-4 z-[210] bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+                  {allImages[currentIndex]?.caption && (
+                    <p className="text-sm text-white/90 text-center max-w-2xl px-4 line-clamp-2">
+                      {allImages[currentIndex].caption}
+                    </p>
+                  )}
+
+                  {allImages.length > 1 && (
+                    <div
+                      className="flex gap-2 overflow-x-auto max-w-[85vw] pb-2 scrollbar-thin px-4 scrollbar-thumb-white/20 scrollbar-track-transparent"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {allImages.map((img, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setCurrentIndex(idx)}
+                          className={cn(
+                            "relative flex-shrink-0 h-12 w-16 overflow-hidden rounded border-2 transition-all cursor-pointer",
+                            idx === currentIndex
+                              ? "border-white ring-2 ring-white/20"
+                              : "border-transparent hover:border-white/50",
+                          )}
+                        >
+                          <Image
+                            src={img.image_url}
+                            alt={`Thumbnail ${idx + 1}`}
+                            fill
+                            sizes="64px"
+                            className="object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
             )}
-          </motion.div>
+          </AnimatePresence>,
+          document.body
         )}
-      </AnimatePresence>
     </>
   );
 }
