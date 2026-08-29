@@ -17,13 +17,19 @@ const attempts = new Map<
   string,
   { count: number; firstAttempt: number; lockedUntil: number }
 >();
+const emailAttempts = new Map<
+  string,
+  { count: number; firstAttempt: number; lockedUntil: number }
+>();
 
 const MAX_ATTEMPTS = 5;
+const EMAIL_MAX_ATTEMPTS = 10;
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const LOCKOUT_MS = 30 * 60 * 1000; // 30 minute lockout after max failures
 
 function getClientIP(headersList: Headers): string {
   return (
+    headersList.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
     headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     headersList.get("x-real-ip") ||
     "unknown"
@@ -32,9 +38,14 @@ function getClientIP(headersList: Headers): string {
 
 function cleanupOldEntries() {
   const now = Date.now();
-  for (const [ip, record] of attempts.entries()) {
+  for (const [key, record] of attempts.entries()) {
     if (now - record.firstAttempt > WINDOW_MS && now > record.lockedUntil) {
-      attempts.delete(ip);
+      attempts.delete(key);
+    }
+  }
+  for (const [email, record] of emailAttempts.entries()) {
+    if (now - record.firstAttempt > WINDOW_MS && now > record.lockedUntil) {
+      emailAttempts.delete(email);
     }
   }
 }
@@ -93,6 +104,29 @@ export async function POST(request: Request) {
   }
 
   const { email, password, captchaToken } = validatedData;
+  const normalizedEmail = email.toLowerCase();
+
+  // Check if email is locked out (per-account protection)
+  const emailRecord = emailAttempts.get(normalizedEmail);
+  if (emailRecord) {
+    const now = Date.now();
+
+    if (now < emailRecord.lockedUntil) {
+      const remainingSeconds = Math.ceil((emailRecord.lockedUntil - now) / 1000);
+      return NextResponse.json(
+        {
+          error: "Too many failed attempts. Try again later.",
+          locked: true,
+          remainingSeconds,
+        },
+        { status: 429 }
+      );
+    }
+
+    if (now - emailRecord.firstAttempt > WINDOW_MS && now > emailRecord.lockedUntil) {
+      emailAttempts.delete(normalizedEmail);
+    }
+  }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -119,6 +153,11 @@ export async function POST(request: Request) {
         });
       },
     },
+    cookieOptions: {
+      path: "/",
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    },
   });
 
   // Attempt login
@@ -131,7 +170,7 @@ export async function POST(request: Request) {
   });
 
   if (authError) {
-    // Record failed attempt
+    // Record failed attempt (per-IP and per-email)
     const existing = attempts.get(ip);
     const now = Date.now();
 
@@ -148,8 +187,26 @@ export async function POST(request: Request) {
       });
     }
 
+    const emailExisting = emailAttempts.get(normalizedEmail);
+    if (emailExisting) {
+      emailExisting.count += 1;
+      if (emailExisting.count >= EMAIL_MAX_ATTEMPTS) {
+        emailExisting.lockedUntil = now + LOCKOUT_MS;
+      }
+    } else {
+      emailAttempts.set(normalizedEmail, {
+        count: 1,
+        firstAttempt: now,
+        lockedUntil: 0,
+      });
+    }
+
     const currentCount = attempts.get(ip)!.count;
-    const remaining = MAX_ATTEMPTS - currentCount;
+    const emailCount = emailAttempts.get(normalizedEmail)!.count;
+    const remaining = Math.min(
+      MAX_ATTEMPTS - currentCount,
+      EMAIL_MAX_ATTEMPTS - emailCount,
+    );
 
     if (remaining <= 0) {
       return NextResponse.json(
@@ -171,8 +228,9 @@ export async function POST(request: Request) {
     );
   }
 
-  // Success — clear attempts for this IP
+  // Success — clear attempts for this IP and email
   attempts.delete(ip);
+  emailAttempts.delete(normalizedEmail);
 
   return response;
 }

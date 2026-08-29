@@ -21,6 +21,11 @@ export async function POST() {
           });
         },
       },
+      cookieOptions: {
+        path: "/",
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+      },
     });
 
     await supabase.auth.signOut();
