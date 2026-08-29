@@ -685,6 +685,12 @@ CREATE OR REPLACE FUNCTION reorder_items(
   p_table text, p_ids uuid[], p_indices int[]
 ) RETURNS void AS $$
 BEGIN
+  -- Only authenticated users may reorder. SECURITY INVOKER + RLS enforce
+  -- that the caller owns the rows they update.
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Authentication required for reordering';
+  END IF;
+
   -- Basic table name validation to prevent SQL injection in dynamic query
   IF p_table NOT IN ('projects', 'blogs', 'experiences', 'educations', 'skill_categories', 'languages', 'activities', 'certifications', 'project_images', 'blog_images') THEN
     RAISE EXCEPTION 'Invalid table name for reordering';
@@ -695,7 +701,7 @@ BEGIN
     USING p_indices[i], p_ids[i];
   END LOOP;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY INVOKER SET search_path = public;
 
 -- Resource Creation Limits (Fix #16)
 CREATE OR REPLACE FUNCTION enforce_resource_limits()
@@ -713,6 +719,42 @@ BEGIN
   IF TG_TABLE_NAME = 'easter_egg_config' AND (SELECT count(*) FROM easter_egg_config) >= 5 THEN
     RAISE EXCEPTION 'Maximum easter egg config limit reached (5)';
   END IF;
+  IF TG_TABLE_NAME = 'project_images' AND (SELECT count(*) FROM project_images) >= 500 THEN
+    RAISE EXCEPTION 'Maximum project images limit reached (500)';
+  END IF;
+  IF TG_TABLE_NAME = 'blog_images' AND (SELECT count(*) FROM blog_images) >= 500 THEN
+    RAISE EXCEPTION 'Maximum blog images limit reached (500)';
+  END IF;
+  IF TG_TABLE_NAME = 'certifications' AND (SELECT count(*) FROM certifications) >= 200 THEN
+    RAISE EXCEPTION 'Maximum certifications limit reached (200)';
+  END IF;
+  IF TG_TABLE_NAME = 'certification_skills' AND (SELECT count(*) FROM certification_skills) >= 1000 THEN
+    RAISE EXCEPTION 'Maximum certification skills limit reached (1000)';
+  END IF;
+  IF TG_TABLE_NAME = 'skill_categories' AND (SELECT count(*) FROM skill_categories) >= 100 THEN
+    RAISE EXCEPTION 'Maximum skill categories limit reached (100)';
+  END IF;
+  IF TG_TABLE_NAME = 'experiences' AND (SELECT count(*) FROM experiences) >= 100 THEN
+    RAISE EXCEPTION 'Maximum experiences limit reached (100)';
+  END IF;
+  IF TG_TABLE_NAME = 'educations' AND (SELECT count(*) FROM educations) >= 100 THEN
+    RAISE EXCEPTION 'Maximum educations limit reached (100)';
+  END IF;
+  IF TG_TABLE_NAME = 'languages' AND (SELECT count(*) FROM languages) >= 50 THEN
+    RAISE EXCEPTION 'Maximum languages limit reached (50)';
+  END IF;
+  IF TG_TABLE_NAME = 'activities' AND (SELECT count(*) FROM activities) >= 100 THEN
+    RAISE EXCEPTION 'Maximum activities limit reached (100)';
+  END IF;
+  IF TG_TABLE_NAME = 'social_links' AND (SELECT count(*) FROM social_links) >= 50 THEN
+    RAISE EXCEPTION 'Maximum social links limit reached (50)';
+  END IF;
+  IF TG_TABLE_NAME = 'contact_emails' AND (SELECT count(*) FROM contact_emails) >= 20 THEN
+    RAISE EXCEPTION 'Maximum contact emails limit reached (20)';
+  END IF;
+  IF TG_TABLE_NAME = 'section_order' AND (SELECT count(*) FROM section_order) >= 100 THEN
+    RAISE EXCEPTION 'Maximum section order entries limit reached (100)';
+  END IF;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -727,15 +769,8 @@ CREATE TRIGGER check_blogs_limit
   BEFORE INSERT ON blogs
   FOR EACH ROW EXECUTE FUNCTION enforce_resource_limits();
 
-DROP TRIGGER IF EXISTS check_easter_eggs_limit ON easter_eggs;
-CREATE TRIGGER check_easter_eggs_limit
-  BEFORE INSERT ON easter_eggs
-  FOR EACH ROW EXECUTE FUNCTION enforce_resource_limits();
-
-DROP TRIGGER IF EXISTS check_easter_egg_config_limit ON easter_egg_config;
-CREATE TRIGGER check_easter_egg_config_limit
-  BEFORE INSERT ON easter_egg_config
-  FOR EACH ROW EXECUTE FUNCTION enforce_resource_limits();
+-- NOTE: easter_eggs / easter_egg_config triggers are defined at the end of
+-- this file, after their tables are created (see "RESOURCE LIMIT TRIGGERS").
 
 
 -- =============================================
@@ -749,6 +784,12 @@ CREATE TABLE IF NOT EXISTS public.easter_eggs (
     order_index integer DEFAULT 0,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+ALTER TABLE public.easter_eggs ENABLE ROW LEVEL SECURITY;
+
+-- URL validation to prevent stored XSS via easter egg images
+ALTER TABLE public.easter_eggs DROP CONSTRAINT IF EXISTS check_easter_eggs_url;
+ALTER TABLE public.easter_eggs ADD CONSTRAINT check_easter_eggs_url CHECK (image_url ~ '^https?://|^/[^/]');
 
 DROP POLICY IF EXISTS "Public read" ON public.easter_eggs;
 CREATE POLICY "Public read" ON public.easter_eggs FOR SELECT USING (true);
@@ -782,3 +823,80 @@ DROP POLICY IF EXISTS "Admin update" ON public.easter_egg_config;
 CREATE POLICY "Admin update" ON public.easter_egg_config FOR UPDATE USING (auth.uid() = 'YOUR-USER-UUID-HERE'::uuid);
 DROP POLICY IF EXISTS "Admin delete" ON public.easter_egg_config;
 CREATE POLICY "Admin delete" ON public.easter_egg_config FOR DELETE USING (auth.uid() = 'YOUR-USER-UUID-HERE'::uuid);
+
+-- =============================================
+-- RESOURCE LIMIT TRIGGERS (Security Hardening)
+-- Defined after all tables so a fresh install runs cleanly.
+-- Migration steps for existing databases:
+--   1. Apply the new enforce_resource_limits() function body (above).
+--   2. Run the CREATE TRIGGER statements below.
+-- =============================================
+DROP TRIGGER IF EXISTS check_project_images_limit ON project_images;
+CREATE TRIGGER check_project_images_limit
+  BEFORE INSERT ON project_images
+  FOR EACH ROW EXECUTE FUNCTION enforce_resource_limits();
+
+DROP TRIGGER IF EXISTS check_blog_images_limit ON blog_images;
+CREATE TRIGGER check_blog_images_limit
+  BEFORE INSERT ON blog_images
+  FOR EACH ROW EXECUTE FUNCTION enforce_resource_limits();
+
+DROP TRIGGER IF EXISTS check_certifications_limit ON certifications;
+CREATE TRIGGER check_certifications_limit
+  BEFORE INSERT ON certifications
+  FOR EACH ROW EXECUTE FUNCTION enforce_resource_limits();
+
+DROP TRIGGER IF EXISTS check_certification_skills_limit ON certification_skills;
+CREATE TRIGGER check_certification_skills_limit
+  BEFORE INSERT ON certification_skills
+  FOR EACH ROW EXECUTE FUNCTION enforce_resource_limits();
+
+DROP TRIGGER IF EXISTS check_skill_categories_limit ON skill_categories;
+CREATE TRIGGER check_skill_categories_limit
+  BEFORE INSERT ON skill_categories
+  FOR EACH ROW EXECUTE FUNCTION enforce_resource_limits();
+
+DROP TRIGGER IF EXISTS check_experiences_limit ON experiences;
+CREATE TRIGGER check_experiences_limit
+  BEFORE INSERT ON experiences
+  FOR EACH ROW EXECUTE FUNCTION enforce_resource_limits();
+
+DROP TRIGGER IF EXISTS check_educations_limit ON educations;
+CREATE TRIGGER check_educations_limit
+  BEFORE INSERT ON educations
+  FOR EACH ROW EXECUTE FUNCTION enforce_resource_limits();
+
+DROP TRIGGER IF EXISTS check_languages_limit ON languages;
+CREATE TRIGGER check_languages_limit
+  BEFORE INSERT ON languages
+  FOR EACH ROW EXECUTE FUNCTION enforce_resource_limits();
+
+DROP TRIGGER IF EXISTS check_activities_limit ON activities;
+CREATE TRIGGER check_activities_limit
+  BEFORE INSERT ON activities
+  FOR EACH ROW EXECUTE FUNCTION enforce_resource_limits();
+
+DROP TRIGGER IF EXISTS check_social_links_limit ON social_links;
+CREATE TRIGGER check_social_links_limit
+  BEFORE INSERT ON social_links
+  FOR EACH ROW EXECUTE FUNCTION enforce_resource_limits();
+
+DROP TRIGGER IF EXISTS check_contact_emails_limit ON contact_emails;
+CREATE TRIGGER check_contact_emails_limit
+  BEFORE INSERT ON contact_emails
+  FOR EACH ROW EXECUTE FUNCTION enforce_resource_limits();
+
+DROP TRIGGER IF EXISTS check_section_order_limit ON section_order;
+CREATE TRIGGER check_section_order_limit
+  BEFORE INSERT ON section_order
+  FOR EACH ROW EXECUTE FUNCTION enforce_resource_limits();
+
+DROP TRIGGER IF EXISTS check_easter_eggs_limit ON easter_eggs;
+CREATE TRIGGER check_easter_eggs_limit
+  BEFORE INSERT ON easter_eggs
+  FOR EACH ROW EXECUTE FUNCTION enforce_resource_limits();
+
+DROP TRIGGER IF EXISTS check_easter_egg_config_limit ON easter_egg_config;
+CREATE TRIGGER check_easter_egg_config_limit
+  BEFORE INSERT ON easter_egg_config
+  FOR EACH ROW EXECUTE FUNCTION enforce_resource_limits();
