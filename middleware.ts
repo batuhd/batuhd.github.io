@@ -4,8 +4,9 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Only protect /admin routes (not /admin/login)
-  if (!pathname.startsWith("/admin") || pathname === "/admin/login") {
+  // Case-insensitive protection for /admin routes (not /admin/login)
+  const path = pathname.toLowerCase();
+  if (!path.startsWith("/admin") || path === "/admin/login") {
     return NextResponse.next();
   }
 
@@ -42,13 +43,21 @@ export async function middleware(request: NextRequest) {
         response.cookies.set({ name, value: "", ...options });
       },
     },
+    cookieOptions: {
+      path: "/",
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    },
   });
 
+  // getUser() verifies the session against the Auth server.
+  // getSession() only parses the cookie locally and does not verify
+  // the JWT signature, so it must not be used for authorization.
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     return NextResponse.redirect(new URL("/admin/login", request.url));
   }
 
@@ -56,5 +65,9 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
+  // Next.js matchers are case-sensitive, but /Admin resolves to a 404 in
+  // production (routes are not matched case-insensitively), so the lowercase
+  // matcher is sufficient. The pathname is additionally lowercased inside
+  // the middleware as defense-in-depth.
   matcher: ["/admin/:path*"],
 };
