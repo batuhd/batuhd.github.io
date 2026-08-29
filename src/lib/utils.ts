@@ -21,8 +21,8 @@ export function sanitizeUrl(url: string | undefined | null): string | null {
     return null;
   }
   
-  // Allow relative URLs starting with /
-  if (trimmedUrl.startsWith('/')) {
+  // Allow relative URLs starting with / (reject protocol-relative //host)
+  if (trimmedUrl.startsWith('/') && !trimmedUrl.startsWith('//')) {
     return trimmedUrl;
   }
   

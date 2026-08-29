@@ -53,6 +53,11 @@ export async function GET() {
           const link = `${siteConfig.url}/blog`;
           const pubDate = parseDate(String(post.date || ""));
           const guid = `${siteConfig.url}/blog#${post.id}`;
+          // Escape CDATA terminator to prevent XML injection via blog content
+          const content = String(post.content || "").replace(
+            /]]>/g,
+            "]]]]><![CDATA[>",
+          );
 
           items += `
     <item>
@@ -60,7 +65,7 @@ export async function GET() {
       <link>${link}</link>
       <guid isPermaLink="false">${guid}</guid>
       <description>${excerpt}</description>
-      <content:encoded><![CDATA[${String(post.content || "")}]]></content:encoded>
+      <content:encoded><![CDATA[${content}]]></content:encoded>
       <pubDate>${pubDate}</pubDate>
     </item>`;
         }
