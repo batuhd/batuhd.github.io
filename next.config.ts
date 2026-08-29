@@ -3,6 +3,13 @@ import type { NextConfig } from "next";
 const supabaseProjectUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || "https://*.supabase.co";
 
+// 'unsafe-eval' is only required by Next.js dev tooling (HMR), never in
+// production builds, so it is stripped from the production CSP.
+const scriptSrc =
+  process.env.NODE_ENV === "production"
+    ? "'self' 'unsafe-inline' https://va.vercel-scripts.com https://challenges.cloudflare.com"
+    : "'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://challenges.cloudflare.com";
+
 const nextConfig: NextConfig = {
   // ISR optimization
   images: {
@@ -41,13 +48,14 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://challenges.cloudflare.com",
+              `script-src ${scriptSrc}`,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
               `connect-src 'self' ${supabaseProjectUrl} https://api.github.com https://formspree.io https://va.vercel-scripts.com https://challenges.cloudflare.com`,
               "frame-src 'self' https://challenges.cloudflare.com",
               "frame-ancestors 'none'",
+              "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self' https://formspree.io",
             ].join("; "),
